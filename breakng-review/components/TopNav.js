@@ -26,6 +26,9 @@ export default function TopNav({ user, unread }) {
           <Link href="/documents" className="px-3 py-1.5 rounded-full hover:bg-lavender-soft transition">
             Documents
           </Link>
+          <Link href="/info" className="px-3 py-1.5 rounded-full hover:bg-lavender-soft transition">
+            Info
+          </Link>
         </nav>
         <div className="flex-1 min-w-[160px]">
           <SearchBox />
