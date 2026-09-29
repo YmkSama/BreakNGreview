@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { searchNotes } from '@/lib/queries';
 import { formatRange } from '@/lib/time';
-import { tagInfo } from '@/lib/constants';
+import { tagInfo, classLabels } from '@/lib/constants';
 
 export default async function SearchPage({ searchParams }) {
   const user = await getCurrentUser();
@@ -42,6 +42,9 @@ export default async function SearchPage({ searchParams }) {
                 <span className="rounded-full px-2 py-0.5" style={{ background: info.color, color: info.text }}>
                   {info.label}
                 </span>
+                {classLabels(n.classes).map((c) => (
+                  <span key={c.value} title={c.label}>{c.emoji}</span>
+                ))}
               </div>
               <p className="text-sm">{n.text}</p>
             </Link>

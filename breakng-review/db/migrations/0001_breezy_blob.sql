@@ -1,0 +1,1 @@
+ALTER TABLE "notes" ADD COLUMN "classes" text[] DEFAULT '{}' NOT NULL;

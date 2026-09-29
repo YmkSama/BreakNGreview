@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { createNoteAction } from '@/app/videos/[id]/actions';
 import { NOTE_TAGS } from '@/lib/constants';
 import { formatTimestamp } from '@/lib/time';
+import ClassPicker from './ClassPicker';
 
 export default function NoteComposer({ videoId, users, playerRef, parentId, compact, onDone }) {
   const router = useRouter();
   const [text, setText] = useState('');
   const [tag, setTag] = useState('GENERAL');
+  const [classes, setClasses] = useState([]);
   const [assigneeId, setAssigneeId] = useState('');
   const [isRange, setIsRange] = useState(false);
   const [capturedStart, setCapturedStart] = useState(null);
@@ -39,6 +41,7 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
       endTimestampSeconds: parentId ? null : (isRange ? capturedEnd : null),
       text,
       tag: parentId ? 'GENERAL' : tag,
+      classes: parentId ? [] : classes,
       status: 'OPEN',
       assigneeId: parentId ? null : (assigneeId || null),
     });
@@ -49,6 +52,7 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
       return;
     }
     setText('');
+    setClasses([]);
     setCapturedStart(null);
     setCapturedEnd(null);
     router.refresh();
@@ -80,6 +84,8 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
         className="w-full rounded-xl border border-lavender-soft px-3 py-2 text-sm resize-none bg-white"
         rows={compact ? 2 : 3}
       />
+
+      {!parentId && <ClassPicker value={classes} onChange={setClasses} />}
 
       {!parentId && (
         <div className="flex gap-2 flex-wrap">

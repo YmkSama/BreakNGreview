@@ -49,6 +49,8 @@ const notes = pgTable('notes', {
   endTimestampSeconds: real('end_timestamp_seconds'),
   text: text('text').notNull(),
   tag: text('tag').notNull().default('GENERAL'),
+  // Production classes (emoji-labelled, multi-select) - see NOTE_CLASSES in lib/constants.js
+  classes: text('classes').array().notNull().default([]),
   status: text('status').notNull().default('OPEN'),
   assigneeId: integer('assignee_id').references(() => users.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),

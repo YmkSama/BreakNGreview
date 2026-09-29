@@ -3,10 +3,11 @@
 import { useMemo, useState } from 'react';
 import NoteComposer from './NoteComposer';
 import NoteItem from './NoteItem';
-import { NOTE_TAGS, NOTE_STATUSES } from '@/lib/constants';
+import { NOTE_TAGS, NOTE_STATUSES, NOTE_CLASSES } from '@/lib/constants';
 
 export default function NotesPanel({ video, initialNotes, users, playerRef }) {
   const [tagFilter, setTagFilter] = useState('ALL');
+  const [classFilter, setClassFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [authorFilter, setAuthorFilter] = useState('ALL');
   const [sortMode, setSortMode] = useState('TIME');
@@ -15,6 +16,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef }) {
     let list = initialNotes.filter(
       (n) =>
         (tagFilter === 'ALL' || n.tag === tagFilter) &&
+        (classFilter === 'ALL' || (n.classes || []).includes(classFilter)) &&
         (statusFilter === 'ALL' || n.status === statusFilter) &&
         (authorFilter === 'ALL' || n.authorId === parseInt(authorFilter, 10))
     );
@@ -25,7 +27,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef }) {
       return at - bt;
     });
     return list;
-  }, [initialNotes, tagFilter, statusFilter, authorFilter, sortMode]);
+  }, [initialNotes, tagFilter, classFilter, statusFilter, authorFilter, sortMode]);
 
   return (
     <div className="space-y-4">
@@ -36,6 +38,12 @@ export default function NotesPanel({ video, initialNotes, users, playerRef }) {
           <option value="ALL">All tags</option>
           {NOTE_TAGS.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
+          ))}
+        </select>
+        <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className="rounded-lg border border-lavender-soft px-2 py-1 bg-white">
+          <option value="ALL">All classes</option>
+          {NOTE_CLASSES.map((c) => (
+            <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
           ))}
         </select>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-lavender-soft px-2 py-1 bg-white">

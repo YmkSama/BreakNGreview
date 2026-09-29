@@ -3,14 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toggleReactionAction, updateNoteFieldAction } from '@/app/videos/[id]/actions';
-import { NOTE_TAGS, NOTE_STATUSES, tagInfo, statusInfo } from '@/lib/constants';
+import { NOTE_TAGS, NOTE_STATUSES, tagInfo, statusInfo, classLabels } from '@/lib/constants';
 import { formatRange } from '@/lib/time';
 import { splitMentionSegments } from '@/lib/mentions';
 import NoteComposer from './NoteComposer';
+import ClassPicker from './ClassPicker';
 
 export default function NoteItem({ note, users, playerRef, videoId, depth = 0 }) {
   const router = useRouter();
   const [replying, setReplying] = useState(false);
+  const [editingClasses, setEditingClasses] = useState(false);
+  const cls = classLabels(note.classes);
   const tInfo = tagInfo(note.tag);
   const sInfo = statusInfo(note.status);
 
@@ -84,6 +87,28 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0 })
           </>
         )}
       </div>
+
+      {depth === 0 && (
+        <div className="mb-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+          {editingClasses ? (
+            <>
+              <ClassPicker value={note.classes || []} onChange={(v) => changeField('classes', v)} />
+              <button onClick={() => setEditingClasses(false)} className="text-ink-soft hover:text-ink">Done</button>
+            </>
+          ) : (
+            <>
+              {cls.map((c) => (
+                <span key={c.value} className="rounded-full bg-lavender-soft px-2 py-0.5" title={c.label}>
+                  {c.emoji} {c.label}
+                </span>
+              ))}
+              <button onClick={() => setEditingClasses(true)} className="text-ink-soft hover:text-ink">
+                {cls.length ? '\u270F\uFE0F' : '+ Add class'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <p className="text-sm leading-relaxed whitespace-pre-wrap">
         {segments.map((seg, i) =>

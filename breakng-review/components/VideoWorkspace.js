@@ -5,6 +5,7 @@ import Link from 'next/link';
 import YouTubeEmbed from './YouTubeEmbed';
 import NotesPanel from './NotesPanel';
 import EditVideoControls from './EditVideoControls';
+import TimelineMarkers from './TimelineMarkers';
 import { videoTypeLabel } from '@/lib/constants';
 
 export default function VideoWorkspace({ video, initialNotes, users, initialSeek }) {
@@ -24,7 +25,10 @@ export default function VideoWorkspace({ video, initialNotes, users, initialSeek
         <EditVideoControls video={video} />
       </div>
       <div className="grid lg:grid-cols-[1fr_420px] gap-6 items-start">
-        <YouTubeEmbed youtubeId={video.youtubeId} playerRef={playerRef} initialSeek={initialSeek} />
+        <div>
+          <YouTubeEmbed youtubeId={video.youtubeId} playerRef={playerRef} initialSeek={initialSeek} />
+          <TimelineMarkers notes={initialNotes} playerRef={playerRef} />
+        </div>
         <NotesPanel video={video} initialNotes={initialNotes} users={users} playerRef={playerRef} />
       </div>
     </div>

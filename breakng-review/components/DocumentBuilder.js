@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { NOTE_TAGS, NOTE_STATUSES, tagInfo, statusInfo, videoTypeLabel } from '@/lib/constants';
+import { NOTE_TAGS, NOTE_STATUSES, tagInfo, statusInfo, classLabels, videoTypeLabel } from '@/lib/constants';
 import { formatRange } from '@/lib/time';
 
 function buildMarkdown(groups) {
@@ -14,7 +14,8 @@ function buildMarkdown(groups) {
     }
     for (const n of group.notes) {
       const time = n.timestampSeconds != null ? `[${formatRange(n.timestampSeconds, n.endTimestampSeconds)}] ` : '';
-      const meta = `${tagInfo(n.tag).label} · ${statusInfo(n.status).label}${n.assignee ? ` · assigned: ${n.assignee.name}` : ''}`;
+      const classText = classLabels(n.classes).map((c) => `${c.emoji} ${c.label}`).join(', ');
+      const meta = `${tagInfo(n.tag).label}${classText ? ` · ${classText}` : ''} · ${statusInfo(n.status).label}${n.assignee ? ` · assigned: ${n.assignee.name}` : ''}`;
       lines.push(`- **${time}${n.author?.name || 'Unknown'}** _(${meta})_ — ${n.text}`);
       for (const r of n.replies) {
         lines.push(`  - ↳ **${r.author?.name || 'Unknown'}**: ${r.text}`);

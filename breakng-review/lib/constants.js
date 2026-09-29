@@ -13,6 +13,16 @@ const NOTE_TAGS = [
   { value: 'EDIT_NOTE', label: 'Edit Note', color: '#F5E1F0', text: '#8A3E7A' },
 ];
 
+const NOTE_CLASSES = [
+  { value: 'SFX', label: 'Sound effects', emoji: '🔊' },
+  { value: 'MOTION_GRAPHICS', label: 'Motion graphics', emoji: '🎞️' },
+  { value: 'VFX', label: 'VFX', emoji: '✨' },
+  { value: 'CUT', label: 'Cut', emoji: '✂️' },
+  { value: 'TRANSITION', label: 'Transition', emoji: '🔀' },
+  { value: 'CAMERA_MOVE', label: 'Camera move', emoji: '🎥' },
+  { value: 'SOCIAL_CLIP', label: 'Social media clip suggestion', emoji: '📱' },
+];
+
 const NOTE_STATUSES = [
   { value: 'OPEN', label: 'Open', color: '#FDE6C8', text: '#9C6B1F' },
   { value: 'IN_PROGRESS', label: 'In Progress', color: '#D6ECF5', text: '#2E6C8A' },
@@ -27,6 +37,12 @@ const USER_COLORS = [
 function tagInfo(value) {
   return NOTE_TAGS.find((t) => t.value === value) || NOTE_TAGS[0];
 }
+function classInfo(value) {
+  return NOTE_CLASSES.find((c) => c.value === value) || null;
+}
+function classLabels(values) {
+  return (values || []).map(classInfo).filter(Boolean);
+}
 function statusInfo(value) {
   return NOTE_STATUSES.find((s) => s.value === value) || NOTE_STATUSES[0];
 }
@@ -39,8 +55,11 @@ module.exports = {
   VIDEO_TYPES,
   NOTE_TAGS,
   NOTE_STATUSES,
+  NOTE_CLASSES,
   USER_COLORS,
   tagInfo,
   statusInfo,
+  classInfo,
+  classLabels,
   videoTypeLabel,
 };

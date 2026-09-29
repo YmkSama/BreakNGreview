@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatRange } from '@/lib/time';
-import { tagInfo } from '@/lib/constants';
+import { tagInfo, classLabels } from '@/lib/constants';
 import { markAllReadAction } from '@/app/activity/actions';
 
 const NOTIF_LABEL = {
@@ -80,6 +80,9 @@ export default function ActivityTabs({ activity, notifications }) {
                       {info.label}
                     </span>
                   )}
+                  {classLabels(n.classes).map((c) => (
+                    <span key={c.value} title={c.label}>{c.emoji}</span>
+                  ))}
                 </div>
                 <p className="text-sm line-clamp-2">{n.text}</p>
               </Link>

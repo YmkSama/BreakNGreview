@@ -134,7 +134,7 @@ async function getNotesForVideo(videoId, currentUserId) {
   return roots;
 }
 
-async function createNote({ videoId, authorId, parentId, timestampSeconds, endTimestampSeconds, text, tag, status, assigneeId }) {
+async function createNote({ videoId, authorId, parentId, timestampSeconds, endTimestampSeconds, text, tag, classes, status, assigneeId }) {
   const rows = await db
     .insert(notes)
     .values({
@@ -145,6 +145,7 @@ async function createNote({ videoId, authorId, parentId, timestampSeconds, endTi
       endTimestampSeconds: endTimestampSeconds ?? null,
       text,
       tag: tag || 'GENERAL',
+      classes: classes || [],
       status: status || 'OPEN',
       assigneeId: assigneeId || null,
     })
