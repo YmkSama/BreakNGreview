@@ -44,6 +44,20 @@ async function createVideo({ title, youtubeId, type, episodeNumber, createdBy })
   return rows[0];
 }
 
+async function updateVideo(id, { title, type, episodeNumber }) {
+  const rows = await db
+    .update(videos)
+    .set({ title, type, episodeNumber: episodeNumber || null })
+    .where(eq(videos.id, id))
+    .returning();
+  return rows[0];
+}
+
+// Notes, documents and notifications cascade-delete with the video.
+async function deleteVideo(id) {
+  await db.delete(videos).where(eq(videos.id, id));
+}
+
 // ---------------------------------------------------------------------------
 // Notifications
 // ---------------------------------------------------------------------------
@@ -261,6 +275,8 @@ module.exports = {
   getVideos,
   getVideoById,
   createVideo,
+  updateVideo,
+  deleteVideo,
   getNotificationsForUser,
   getUnreadCount,
   markAllNotificationsRead,
