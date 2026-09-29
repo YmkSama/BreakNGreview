@@ -13,8 +13,8 @@ export default async function RootLayout({ children }) {
   const unread = user ? await getUnreadCount(user.id) : 0;
 
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <TopNav user={user} unread={unread} />
         <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
       </body>
