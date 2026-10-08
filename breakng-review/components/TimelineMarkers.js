@@ -23,7 +23,7 @@ export default function TimelineMarkers({ notes, playerRef }) {
   if (!duration || markers.length === 0) return null;
 
   return (
-    <div className="relative h-8 mt-2 bg-lavender-soft/60 rounded-full" aria-label="Note markers">
+    <div className="relative h-11 mt-2 bg-lavender-soft/60 rounded-full" aria-label="Note markers">
       {markers.map((n) => {
         const cls = classLabels(n.classes);
         const pct = Math.min(100, Math.max(0, (n.timestampSeconds / duration) * 100));
@@ -35,7 +35,7 @@ export default function TimelineMarkers({ notes, playerRef }) {
               playerRef.current?.playVideo?.();
             }}
             title={`${formatTimestamp(n.timestampSeconds)} · ${cls.map((c) => c.label).join(', ')}`}
-            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 text-base leading-none hover:scale-125 transition"
+            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 min-w-9 min-h-9 flex items-center justify-center text-lg leading-none hover:scale-125 transition"
             style={{ left: `${pct}%` }}
           >
             {cls[0].emoji}

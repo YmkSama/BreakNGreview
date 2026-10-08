@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 let apiPromise = null;
 function loadYouTubeAPI() {
@@ -26,18 +26,38 @@ function loadYouTubeAPI() {
   return apiPromise;
 }
 
+// https://developers.google.com/youtube/iframe_api_reference#onError
+function errorMessage(code) {
+  if (code === 101 || code === 150) return 'The owner of this video has disabled embedding.';
+  if (code === 100) return 'This video was removed or is private.';
+  if (code === 153) return 'YouTube could not verify where this player is embedded.';
+  return 'The video could not be played here.';
+}
+
 export default function YouTubeEmbed({ youtubeId, playerRef, initialSeek }) {
   const containerRef = useRef(null);
+  const [errorCode, setErrorCode] = useState(null);
 
   useEffect(() => {
     let player;
     let cancelled = false;
+    setErrorCode(null);
 
     loadYouTubeAPI().then((YT) => {
       if (cancelled || !containerRef.current) return;
-      player = new YT.Player(containerRef.current, {
+      // YT.Player replaces the element it is given, so hand it a node React doesn't own.
+      const mount = document.createElement('div');
+      mount.className = 'w-full h-full';
+      containerRef.current.appendChild(mount);
+
+      player = new YT.Player(mount, {
         videoId: youtubeId,
-        playerVars: { rel: 0, modestbranding: 1 },
+        playerVars: {
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1, // keep playback inline on iOS instead of forcing fullscreen
+          origin: window.location.origin,
+        },
         events: {
           onReady: () => {
             playerRef.current = player;
@@ -45,6 +65,7 @@ export default function YouTubeEmbed({ youtubeId, playerRef, initialSeek }) {
               try { player.seekTo(initialSeek, true); } catch (e) {}
             }
           },
+          onError: (e) => setErrorCode(e.data),
         },
       });
     });
@@ -53,13 +74,27 @@ export default function YouTubeEmbed({ youtubeId, playerRef, initialSeek }) {
       cancelled = true;
       if (player && typeof player.destroy === 'function') player.destroy();
       if (playerRef.current === player) playerRef.current = null;
+      if (containerRef.current) containerRef.current.replaceChildren();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [youtubeId]);
 
   return (
-    <div className="aspect-video rounded-2xl overflow-hidden shadow-sm bg-black">
+    <div className="relative aspect-video rounded-2xl overflow-hidden shadow-sm bg-black">
       <div ref={containerRef} className="w-full h-full" />
+      {errorCode && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 text-white text-center p-4 text-sm">
+          <p>{errorMessage(errorCode)}</p>
+          <a
+            href={`https://www.youtube.com/watch?v=${youtubeId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-lg bg-white text-ink font-medium"
+          >
+            Watch on YouTube
+          </a>
+        </div>
+      )}
     </div>
   );
 }
