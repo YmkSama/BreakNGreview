@@ -37,11 +37,15 @@ function errorMessage(code) {
 export default function YouTubeEmbed({ youtubeId, playerRef, initialSeek }) {
   const containerRef = useRef(null);
   const [errorCode, setErrorCode] = useState(null);
+  const [stalled, setStalled] = useState(false);
 
   useEffect(() => {
     let player;
     let cancelled = false;
     setErrorCode(null);
+    setStalled(false);
+    // If the player never reports ready (blocked script, blocked iframe, etc.) say so instead of a black box.
+    const stallTimer = setTimeout(() => { if (!playerRef.current) setStalled(true); }, 8000);
 
     loadYouTubeAPI().then((YT) => {
       if (cancelled || !containerRef.current) return;
@@ -64,6 +68,7 @@ export default function YouTubeEmbed({ youtubeId, playerRef, initialSeek }) {
         events: {
           onReady: () => {
             playerRef.current = player;
+            setStalled(false);
             if (initialSeek) {
               try { player.seekTo(initialSeek, true); } catch (e) {}
             }
@@ -75,6 +80,7 @@ export default function YouTubeEmbed({ youtubeId, playerRef, initialSeek }) {
 
     return () => {
       cancelled = true;
+      clearTimeout(stallTimer);
       if (player && typeof player.destroy === 'function') player.destroy();
       if (playerRef.current === player) playerRef.current = null;
       if (containerRef.current) containerRef.current.replaceChildren();
@@ -85,9 +91,13 @@ export default function YouTubeEmbed({ youtubeId, playerRef, initialSeek }) {
   return (
     <div className="relative aspect-video rounded-2xl overflow-hidden shadow-sm bg-black">
       <div ref={containerRef} className="w-full h-full" />
-      {errorCode && (
+      {(errorCode || stalled) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 text-white text-center p-4 text-sm">
-          <p>{errorMessage(errorCode)}</p>
+          <p>
+            {errorCode
+              ? errorMessage(errorCode)
+              : "The video player didn’t load. A content blocker, private browsing, or a slow connection can cause this."}
+          </p>
           <a
             href={`https://www.youtube.com/watch?v=${youtubeId}`}
             target="_blank"
