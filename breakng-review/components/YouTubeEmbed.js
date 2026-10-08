@@ -52,6 +52,9 @@ export default function YouTubeEmbed({ youtubeId, playerRef, initialSeek }) {
 
       player = new YT.Player(mount, {
         videoId: youtubeId,
+        // The API defaults to a fixed 640x390 iframe, which overflows (and is clipped) on phones.
+        width: '100%',
+        height: '100%',
         playerVars: {
           rel: 0,
           modestbranding: 1,
