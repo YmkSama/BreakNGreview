@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { logoutAction } from '@/app/login/actions';
+import { logoutAction } from '@/app/(main)/login/actions';
 import SearchBox from './SearchBox';
 
 export default function TopNav({ user, unread }) {

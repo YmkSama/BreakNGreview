@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createNoteAction } from '@/app/videos/[id]/actions';
+import { createNoteAction } from '@/app/(main)/videos/[id]/actions';
 import { NOTE_TAGS } from '@/lib/constants';
 import { formatTimestamp } from '@/lib/time';
 import ClassPicker from './ClassPicker';

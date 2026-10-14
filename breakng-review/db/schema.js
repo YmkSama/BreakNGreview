@@ -96,4 +96,29 @@ const documents = pgTable('documents', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-module.exports = { users, videos, notes, reactions, notifications, documents };
+// ---------------------------------------------------------------------------
+// Link page (/links) — public link-in-bio page, edited from /links/admin
+// ---------------------------------------------------------------------------
+const linkPageConfig = pgTable('link_page_config', {
+  id: text('id').primaryKey(), // single row: 'main'
+  data: jsonb('data').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+const linkClicks = pgTable('link_clicks', {
+  blockId: text('block_id').primaryKey(),
+  count: integer('count').notNull().default(0),
+});
+
+const linkSubscribers = pgTable('link_subscribers', {
+  id: serial('id').primaryKey(),
+  email: text('email').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  emailUnique: uniqueIndex('link_subscribers_email_unique').on(table.email),
+}));
+
+module.exports = {
+  users, videos, notes, reactions, notifications, documents,
+  linkPageConfig, linkClicks, linkSubscribers,
+};

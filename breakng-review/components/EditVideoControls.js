@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateVideoAction, deleteVideoAction } from '@/app/videos/actions';
+import { updateVideoAction, deleteVideoAction } from '@/app/(main)/videos/actions';
 import { VIDEO_TYPES } from '@/lib/constants';
 
 export default function EditVideoControls({ video }) {

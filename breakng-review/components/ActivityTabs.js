@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatRange } from '@/lib/time';
 import { tagInfo, classLabels } from '@/lib/constants';
-import { markAllReadAction } from '@/app/activity/actions';
+import { markAllReadAction } from '@/app/(main)/activity/actions';
 
 const NOTIF_LABEL = {
   MENTION: 'mentioned you',
