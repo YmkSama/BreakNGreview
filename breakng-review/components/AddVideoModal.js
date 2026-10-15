@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { createVideoAction } from '@/app/(main)/videos/actions';
+import { createVideoAction } from '@/app/videos/actions';
 import { VIDEO_TYPES } from '@/lib/constants';
 
 const initialState = { error: null, ok: false };

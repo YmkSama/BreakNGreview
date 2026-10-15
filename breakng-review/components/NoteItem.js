@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { toggleReactionAction, updateNoteFieldAction } from '@/app/(main)/videos/[id]/actions';
+import { toggleReactionAction, updateNoteFieldAction } from '@/app/videos/[id]/actions';
 import { NOTE_TAGS, NOTE_STATUSES, tagInfo, statusInfo, classLabels } from '@/lib/constants';
 import { formatRange } from '@/lib/time';
 import { splitMentionSegments } from '@/lib/mentions';
