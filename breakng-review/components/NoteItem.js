@@ -32,10 +32,11 @@ function StatusGlyph({ status }) {
 
 const STATUS_LABEL = { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved' };
 
-export default function NoteItem({ note, users, playerRef, videoId, depth = 0, isCurrent = false, showAuthor = true }) {
+export default function NoteItem({ note, users, playerRef, videoId, depth = 0, isCurrent = false, showAuthor = true, compact = false }) {
   const router = useRouter();
   const [replying, setReplying] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [openCompact, setOpenCompact] = useState(false);
   const [status, setStatus] = useState(note.status);
   const [undo, setUndo] = useState(false);
   const undoTimer = useRef(null);
@@ -80,7 +81,9 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
     router.refresh();
   };
 
-  const segments = splitMentionSegments(note.text, users);
+  const segments = splitMentionSegments(note.text.trim(), users);
+  const tint = deptColor && !resolved ? { backgroundColor: `${deptColor}66` } : undefined;
+  const ring = isCurrent ? 'border-[#6D63B0] ring-2 ring-lavender' : 'border-lavender-soft';
 
   if (depth > 0) {
     return (
@@ -99,14 +102,63 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
     );
   }
 
+  // Compact mode: one dense row per note; tap the text to open the full note.
+  if (compact && !openCompact) {
+    const lines = note.text.trim().split('\n');
+    return (
+      <div
+        data-note-id={note.id}
+        style={tint}
+        className={`note-card bg-white/70 rounded-xl border px-2 py-1 flex items-center gap-2 text-sm transition-colors ${ring} ${resolved ? 'opacity-75' : ''}`}
+        aria-current={isCurrent ? 'true' : undefined}
+      >
+        <button
+          onClick={toggleResolved}
+          aria-label={resolved ? 'Reopen this note' : 'Mark this note resolved'}
+          title={resolved ? 'Resolved. Tap to reopen' : `${STATUS_LABEL[status] || 'Open'}. Tap to resolve`}
+          className="status-toggle w-7 h-7 shrink-0 inline-flex items-center justify-center rounded-full hover:bg-lavender-soft transition"
+        >
+          <StatusGlyph status={status} />
+        </button>
+        {note.timestampSeconds != null && (
+          <button onClick={jump} className="pill shrink-0 px-2 py-0.5 rounded-full bg-sky-soft font-mono text-xs font-semibold tabular hover:brightness-95">
+            {formatRange(note.timestampSeconds, note.endTimestampSeconds)}
+          </button>
+        )}
+        {cls.length > 0 && (
+          <span className="shrink-0 text-sm" title={cls.map((c) => c.label).join(', ')}>
+            {cls.map((c) => (
+              <span key={c.value} aria-hidden="true">{c.emoji}</span>
+            ))}
+            <span className="sr-only">{cls.map((c) => c.label).join(', ')}</span>
+          </span>
+        )}
+        <button
+          onClick={() => setOpenCompact(true)}
+          aria-label={`Open note: ${lines[0]}`}
+          className="min-w-0 flex-1 truncate text-left hover:underline decoration-dotted"
+        >
+          {lines[0]}
+          {lines.length > 1 ? ' …' : ''}
+        </button>
+        {note.replies?.length > 0 && <span className="shrink-0 text-xs text-ink-soft tabular">{note.replies.length} repl{note.replies.length === 1 ? 'y' : 'ies'}</span>}
+        {undo && (
+          <button onClick={toggleResolved} className="shrink-0 text-xs font-semibold underline">Undo</button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       data-note-id={note.id}
       onKeyDown={(e) => {
-        if (e.key === 'Escape' && editing) setEditing(false);
+        if (e.key !== 'Escape') return;
+        if (editing) setEditing(false);
+        else if (compact && openCompact) setOpenCompact(false);
       }}
-      style={deptColor && !resolved ? { backgroundColor: `${deptColor}66` } : undefined}
-      className={`note-card bg-white/70 rounded-2xl p-4 border transition-colors ${isCurrent ? 'border-[#6D63B0] ring-2 ring-lavender' : 'border-lavender-soft'} ${resolved ? 'opacity-75' : ''}`}
+      style={tint}
+      className={`note-card bg-white/70 rounded-2xl p-4 border transition-colors ${ring} ${resolved ? 'opacity-75' : ''}`}
       aria-current={isCurrent ? 'true' : undefined}
     >
       <div className="flex items-center gap-2 flex-wrap text-xs mb-1.5">
@@ -150,6 +202,11 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
         >
           {editing ? 'Done' : 'Edit'}
         </button>
+        {compact && (
+          <button onClick={() => { setOpenCompact(false); setEditing(false); }} className="pill shrink-0 text-ink-soft hover:text-ink underline decoration-dotted">
+            Collapse
+          </button>
+        )}
       </div>
 
       {(note.tag !== 'GENERAL' || assignee || cls.length > 0 || status === 'IN_PROGRESS') && !editing && (

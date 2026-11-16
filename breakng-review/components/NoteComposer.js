@@ -23,44 +23,38 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
   const [timeHint, setTimeHint] = useState(null);
   const [showMore, setShowMore] = useState(false);
   const [open, setOpen] = useState(false);
-  const [pauseOnType, setPauseOnType] = useState(false);
   const [touch, setTouch] = useState(false);
 
   useEffect(() => {
-    try {
-      setPauseOnType(localStorage.getItem('bnt:pause-on-type') === '1');
-    } catch (e) {}
     setTouch(window.matchMedia?.('(pointer: coarse)').matches || false);
   }, []);
-  const togglePause = (on) => {
-    setPauseOnType(on);
-    try {
-      localStorage.setItem('bnt:pause-on-type', on ? '1' : '0');
-    } catch (e) {}
-  };
 
   // A new note starts as a single line and opens up when you focus it or start writing.
+  // The extra fields float over the list (see below) so opening them never moves the notes.
   const expanded = !!parentId || open || !!text.trim() || classes.length > 0 || capturedStart !== null || isRange;
 
   const currentTime = () => {
     const t = playerRef?.current?.getCurrentTime?.();
     return typeof t === 'number' ? t : null;
   };
-  const stamp = (set) => {
+  // explicit = the user pressed a Mark button. Focusing the box stamps quietly and never complains.
+  const stamp = (set, explicit) => {
     const t = currentTime();
-    if (t === null) {
-      setTimeHint('The video player is not ready yet. Wait for it to load, then re-mark the time.');
-      return;
-    }
-    if (t === 0 && set === setCapturedStart) {
-      setTimeHint('The video has not started. Play it to the moment you mean, then press "Mark current time". Without a time, the note posts without a timestamp.');
+    if (t === null || (t === 0 && set === setCapturedStart)) {
+      if (explicit) {
+        setTimeHint(
+          t === null
+            ? 'The video player is still loading. Try again in a moment.'
+            : 'The video is at 0:00. Play it to the moment you mean, then mark it. Without a time the note has no timestamp.'
+        );
+      }
       return;
     }
     setTimeHint(null);
     set(t);
   };
-  const captureStart = () => stamp(setCapturedStart);
-  const captureEnd = () => stamp(setCapturedEnd);
+  const captureStart = (explicit = true) => stamp(setCapturedStart, explicit);
+  const captureEnd = () => stamp(setCapturedEnd, true);
 
   // Press N anywhere (outside a field) to jump into a new note at the current moment.
   useEffect(() => {
@@ -83,8 +77,12 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
     if (parentId) return;
     setOpen(true);
     if (capturedStart === null) {
-      if (pauseOnType) playerRef?.current?.pauseVideo?.();
-      captureStart();
+      let pause = false;
+      try {
+        pause = localStorage.getItem('bnt:pause-on-type') === '1';
+      } catch (e) {}
+      if (pause) playerRef?.current?.pauseVideo?.();
+      captureStart(false);
     }
   };
   const onBlurForm = () => {
@@ -98,7 +96,7 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
     e?.preventDefault();
     if (!text.trim() || pending) return;
     if (!parentId && isRange && capturedStart !== null && (capturedEnd === null || capturedEnd <= capturedStart)) {
-      setError('Mark an end time after the start, or untick "range".');
+      setError('Mark an end time after the start, or remove the end time.');
       return;
     }
     setPending(true);
@@ -129,11 +127,12 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
     setCapturedEnd(null);
     setIsRange(false);
     setShowMore(false);
+    setTimeHint(null);
     router.refresh();
     if (onDone) onDone();
   };
 
-  // Enter posts; Shift+Enter makes a new line.
+  // Enter posts; Shift+Enter makes a new line; Escape closes.
   const onKeyDown = (e) => {
     if (e.key === 'Escape') {
       textRef.current?.blur();
@@ -146,52 +145,78 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
     }
   };
 
-  return (
-    <form
-      ref={formRef}
-      onSubmit={submit}
-      onFocus={onFocusForm}
-      onBlur={onBlurForm}
-      className={compact ? 'mt-2 space-y-2' : 'space-y-2 bg-white/70 rounded-2xl p-3 border border-lavender-soft'}
-    >
-      <textarea
-        ref={textRef}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={onKeyDown}
-        aria-label={parentId ? 'Reply' : 'New note'}
-        placeholder={parentId ? 'Write a reply… @mention a teammate' : `Add a note at this moment…${touch ? '' : ' (press N)'}`}
-        className="w-full rounded-xl border border-lavender-soft px-3 py-2 text-sm resize-none bg-white"
-        rows={expanded ? (compact ? 2 : 3) : 1}
-      />
+  const textarea = (
+    <textarea
+      ref={textRef}
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onKeyDown={onKeyDown}
+      aria-label={parentId ? 'Reply' : 'New note'}
+      placeholder={parentId ? 'Write a reply… @mention a teammate' : `Add a note at this moment…${touch ? '' : ' (press N)'}`}
+      className="w-full rounded-xl border border-lavender-soft px-3 py-2 text-sm resize-none bg-white"
+      rows={parentId ? 2 : text.includes('\n') || text.length > 60 ? 3 : 1}
+    />
+  );
 
-      {expanded && !parentId && (
-        <>
+  // Replies: a small inline form, no floating panel.
+  if (parentId) {
+    return (
+      <form ref={formRef} onSubmit={submit} className={compact ? 'mt-2 space-y-2' : 'space-y-2'}>
+        {textarea}
+        {error && <p role="alert" className="text-xs text-ink bg-rose-soft rounded-lg px-2 py-1">{error}</p>}
+        <div className="flex justify-end gap-2">
+          {onDone && (
+            <button type="button" onClick={onDone} className="text-xs text-ink-soft px-3 py-1.5">Cancel</button>
+          )}
+          <button disabled={pending || !text.trim()} className="text-sm font-semibold bg-[#6D63B0] text-white px-4 py-1.5 rounded-lg disabled:opacity-50">
+            {pending ? 'Posting…' : 'Reply'}
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <form ref={formRef} onSubmit={submit} onFocus={onFocusForm} onBlur={onBlurForm} className="relative">
+      <div className="bg-white/70 rounded-2xl p-2 border border-lavender-soft">{textarea}</div>
+
+      {expanded && (
+        <div className="absolute left-0 right-0 top-full mt-1 z-30 rounded-2xl border border-lavender bg-paper shadow-lg p-3 space-y-3">
           <div className="flex items-center gap-2 flex-wrap text-xs">
             <button
               type="button"
-              onClick={captureStart}
-              className="px-2.5 py-1 rounded-lg bg-sky-soft text-ink font-medium tabular"
-              title="Re-mark the current video time"
+              onClick={() => captureStart(true)}
+              className="pill px-2.5 py-1 rounded-lg bg-sky-soft text-ink font-medium tabular"
+              title="Use the video's current time"
             >
-              {capturedStart !== null ? `⏱ Marked at ${formatTimestamp(capturedStart)} · re-mark` : '⏱ Mark current time'}
+              {capturedStart !== null ? `⏱ Marked at ${formatTimestamp(capturedStart)} · re-mark` : '⏱ No time yet · mark current time'}
             </button>
-            <label className="flex items-center gap-1 text-ink-soft">
-              <input type="checkbox" checked={isRange} onChange={(e) => setIsRange(e.target.checked)} /> range
-            </label>
-            <label className="flex items-center gap-1 text-ink-soft">
-              <input type="checkbox" checked={pauseOnType} onChange={(e) => togglePause(e.target.checked)} /> pause while typing
-            </label>
-            {isRange && (
-              <button type="button" onClick={captureEnd} className="px-2.5 py-1 rounded-lg bg-sky-soft text-ink font-medium tabular">
-                {capturedEnd !== null ? `→ ${formatTimestamp(capturedEnd)}` : '→ Mark end'}
+            {!isRange ? (
+              <button type="button" onClick={() => setIsRange(true)} className="pill text-ink-soft hover:text-ink underline decoration-dotted">
+                + end time
               </button>
+            ) : (
+              <>
+                <button type="button" onClick={captureEnd} className="pill px-2.5 py-1 rounded-lg bg-sky-soft text-ink font-medium tabular">
+                  {capturedEnd !== null ? `→ ${formatTimestamp(capturedEnd)}` : '→ Mark end'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRange(false);
+                    setCapturedEnd(null);
+                  }}
+                  className="pill text-ink-soft hover:text-ink underline decoration-dotted"
+                >
+                  remove end time
+                </button>
+              </>
             )}
           </div>
           {capturedStart !== null && Math.abs(time - capturedStart) > 3 && (
             <p className="text-xs text-ink-soft tabular">The video is now at {formatTimestamp(time)}. Re-mark to use that time instead.</p>
           )}
-          {timeHint && <p className="text-xs text-ink bg-peach-soft rounded-lg px-2 py-1">{timeHint}</p>}
+          {timeHint && <p className="text-xs text-ink-soft">{timeHint}</p>}
 
           <div>
             <p className="text-xs text-ink-soft mb-1">Department</p>
@@ -203,7 +228,7 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
               type="button"
               onClick={() => setShowMore((s) => !s)}
               aria-expanded={showMore}
-              className="text-xs text-ink-soft hover:text-ink underline decoration-dotted"
+              className="pill text-xs text-ink-soft hover:text-ink underline decoration-dotted"
             >
               {showMore ? 'Hide feedback type & assignee' : 'Feedback type & assignee'}
               {!showMore && (tag !== 'GENERAL' || assigneeId) ? ' (set)' : ''}
@@ -234,27 +259,16 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
               </div>
             )}
           </div>
-        </>
-      )}
 
-      {error && (
-        <p role="alert" className="text-xs text-ink bg-rose-soft rounded-lg px-2 py-1">{error}</p>
-      )}
+          {error && <p role="alert" className="text-xs text-ink bg-rose-soft rounded-lg px-2 py-1">{error}</p>}
 
-      {expanded && (
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-ink-soft hidden sm:block text-balance">Enter to post · Shift+Enter for a new line</p>
-          <div className="flex gap-2 ml-auto">
-            {onDone && (
-              <button type="button" onClick={onDone} className="text-xs text-ink-soft px-3 py-1.5">
-                Cancel
-              </button>
-            )}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-ink-soft hidden sm:block">Enter to post · Shift+Enter for a new line · Esc to close</p>
             <button
               disabled={pending || !text.trim()}
-              className="text-sm font-semibold bg-[#6D63B0] text-white px-4 py-1.5 rounded-lg disabled:opacity-50"
+              className="ml-auto text-sm font-semibold bg-[#6D63B0] text-white px-4 py-1.5 rounded-lg disabled:opacity-50"
             >
-              {pending ? 'Posting…' : parentId ? 'Reply' : 'Add note'}
+              {pending ? 'Posting…' : 'Add note'}
             </button>
           </div>
         </div>

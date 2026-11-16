@@ -60,8 +60,8 @@ export default async function InfoPage() {
       <Section title="3. Leaving a note">
         <Steps
           items={[
-            <>Play to the moment you want to comment on, then click into the note box (or press <strong>N</strong>). The time at that moment is stamped automatically. Tick <strong>pause while typing</strong> to freeze the video as you write, and use <strong>⏱ re-mark</strong> to change the time.</>,
-            <>For a stretch of video, tick <strong>range</strong> and click <strong>→ Mark end</strong> at the end point.</>,
+            <>Play to the moment you want to comment on, then click into the note box (or press <strong>N</strong>). The time at that moment is stamped automatically. Turn on <strong>Pause the video when I start writing</strong> (under the <strong>?</strong> button above the notes) to freeze the video as you write, and use <strong>⏱ re-mark</strong> to change the time.</>,
+            <>For a stretch of video, click <strong>+ end time</strong>, then <strong>→ Mark end</strong> at the end point.</>,
             <>Write your note. Type <strong>@name</strong> to mention a teammate. They&apos;ll get a notification.</>,
             <>Pick one or more <strong>departments</strong>. Open <strong>Feedback type &amp; assignee</strong> if you need them. Press <strong>Enter</strong> to post (Shift+Enter adds a new line).</>,
           ]}
@@ -106,7 +106,7 @@ export default async function InfoPage() {
 
       <Section title="5. Finding things">
         <ul className="list-disc pl-5 space-y-1">
-          <li>Above the notes, switch between All, To do and Done. Tap <strong>Assigned to me</strong> or a department chip for a quick list (the strip under the video follows the department), or open <strong>More filters</strong> to narrow by feedback type, author or assignee. Press <strong>Esc</strong> to close a note box or edit panel. Your choices are remembered.</li>
+          <li>Above the notes, tap a department chip to show just that department (the strip under the video follows it), or use <strong>Hide resolved</strong>, <strong>Assigned to me</strong> and <strong>Compact</strong> (one line per note; tap a note to open it) , or open <strong>More filters</strong> to narrow by feedback type, author or assignee. Press <strong>Esc</strong> to close a note box or edit panel. Your choices are remembered.</li>
           <li>Tick <strong>Follow playback</strong> to keep the current note in view as the video plays, or press <strong>J</strong> / <strong>K</strong> to jump to the next or previous note. The note at the current time is outlined.</li>
           <li>The search bar at the top searches note text across all videos. Click a result to jump to that moment.</li>
           <li>

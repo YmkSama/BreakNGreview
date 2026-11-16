@@ -7,14 +7,20 @@ import { NOTE_TAGS, NOTE_CLASSES } from '@/lib/constants';
 import { formatTimestamp } from '@/lib/time';
 
 const STORE_KEY = 'bnt:notes-filters';
-const DEFAULTS = { view: 'ALL', mine: false, tag: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME', follow: false };
+const PAUSE_KEY = 'bnt:pause-on-type';
+const DEFAULTS = { hideDone: false, mine: false, tag: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME', follow: false, compact: false };
 
 const selectCls = 'w-full rounded-lg border border-lavender-soft px-2 py-1 bg-white';
+const chipBase = 'pill px-3 py-1 rounded-full text-xs font-medium border';
+const chipOn = 'bg-lavender border-lavender text-ink';
+const chipOff = 'bg-white/70 border-lavender-soft text-ink-soft hover:text-ink';
 
 // dept / onDeptChange: the one department filter, shared with the timeline above the player.
 export default function NotesPanel({ video, initialNotes, users, playerRef, time = 0, currentUserId, dept = 'ALL', onDeptChange }) {
   const [f, setF] = useState(DEFAULTS);
   const [showFilters, setShowFilters] = useState(false);
+  const [showKeys, setShowKeys] = useState(false);
+  const [pauseOnType, setPauseOnType] = useState(false);
   const [typing, setTyping] = useState(false);
   const [composerVisible, setComposerVisible] = useState(true);
   const listRef = useRef(null);
@@ -24,7 +30,13 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
-      if (saved) setF({ ...DEFAULTS, ...saved });
+      if (saved) {
+        // older versions stored a three-way view; "To do" maps to hiding resolved notes
+        const hideDone = saved.hideDone ?? saved.view === 'TODO';
+        const { view, cls, ...rest } = saved;
+        setF({ ...DEFAULTS, ...rest, hideDone });
+      }
+      setPauseOnType(localStorage.getItem(PAUSE_KEY) === '1');
     } catch (e) {}
   }, []);
   useEffect(() => {
@@ -32,6 +44,12 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
       localStorage.setItem(STORE_KEY, JSON.stringify(f));
     } catch (e) {}
   }, [f]);
+  const togglePause = (on) => {
+    setPauseOnType(on);
+    try {
+      localStorage.setItem(PAUSE_KEY, on ? '1' : '0');
+    } catch (e) {}
+  };
 
   // Phones: hide the "Add note" bar while a field is focused (keyboard up) or the composer is on screen.
   useEffect(() => {
@@ -76,7 +94,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
   const filtered = useMemo(() => {
     const list = initialNotes.filter(
       (n) =>
-        (f.view === 'ALL' || (f.view === 'DONE' ? done(n) : !done(n))) &&
+        (!f.hideDone || !done(n)) &&
         (!f.mine || n.assigneeId === currentUserId) &&
         (f.tag === 'ALL' || n.tag === f.tag) &&
         (dept === 'ALL' || (dept === 'NONE' ? (n.classes || []).length === 0 : (n.classes || []).includes(dept))) &&
@@ -161,17 +179,11 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
   };
 
   const activeFilters =
-    ['tag', 'author', 'assignee'].filter((k) => f[k] !== 'ALL').length + (f.sort !== 'TIME' ? 1 : 0) + (f.mine ? 1 : 0) + (dept !== 'ALL' ? 1 : 0);
+    ['tag', 'author', 'assignee'].filter((k) => f[k] !== 'ALL').length + (f.sort !== 'TIME' ? 1 : 0) + (f.mine ? 1 : 0) + (f.hideDone ? 1 : 0) + (dept !== 'ALL' ? 1 : 0);
   const clearFilters = () => {
-    set({ mine: false, tag: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME' });
+    set({ hideDone: false, mine: false, tag: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME' });
     onDeptChange?.('ALL');
   };
-
-  const views = [
-    { value: 'ALL', label: 'All', count: total },
-    { value: 'TODO', label: 'To do', count: total - doneCount },
-    { value: 'DONE', label: 'Done', count: doneCount },
-  ];
 
   return (
     <div className="space-y-3 pb-20 lg:pb-0">
@@ -179,18 +191,39 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
 
       {total > 0 && (
         <div>
-          <div className="flex items-center justify-between text-xs text-ink-soft mb-1">
-            <span className="tabular">
-              {doneCount === total ? 'All notes resolved ✓' : `${doneCount} of ${total} resolved`}
-            </span>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" checked={f.follow} onChange={(e) => set({ follow: e.target.checked })} />
-              Follow playback
-            </label>
+          <div className="flex items-center justify-between text-xs text-ink-soft mb-1 tabular">
+            <span>{doneCount === total ? 'All notes resolved ✓' : `${doneCount} of ${total} resolved`}</span>
+            {activeFilters > 0 && (
+              <button onClick={clearFilters} className="pill underline decoration-dotted hover:text-ink">
+                Clear filters ({activeFilters})
+              </button>
+            )}
           </div>
           <div className="h-1.5 rounded-full bg-lavender-soft overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={doneCount} aria-label="Notes resolved">
             <div className="h-full bg-[#2F6A3E] transition-[width] duration-500 ease-out" style={{ width: `${(doneCount / total) * 100}%` }} />
           </div>
+        </div>
+      )}
+
+      {/* Department first: it is how this team slices the work. Wraps instead of scrolling. */}
+      {deptChips.length > 0 && (
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Department. Filters the list and the timeline">
+          {deptChips.map((c) => {
+            const on = dept === c.value;
+            return (
+              <button
+                key={c.value}
+                onClick={() => onDeptChange?.(on ? 'ALL' : c.value)}
+                aria-pressed={on}
+                title={c.label}
+                className={`${chipBase} ${on ? `${chipOn} font-semibold` : chipOff}`}
+              >
+                {c.emoji ? <span aria-hidden="true">{c.emoji} </span> : null}
+                {c.short} <span className="tabular opacity-70">{c.count}</span>
+                <span className="sr-only"> ({c.label})</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -204,62 +237,50 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
         </button>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <div className="inline-flex rounded-full bg-white/70 border border-lavender-soft p-0.5" role="group" aria-label="Show notes">
-          {views.map((v) => (
-            <button
-              key={v.value}
-              onClick={() => set({ view: v.value })}
-              aria-pressed={f.view === v.value}
-              className={`pill px-3 py-1 rounded-full text-xs font-medium ${f.view === v.value ? 'bg-lavender text-ink' : 'text-ink-soft hover:text-ink'}`}
-            >
-              {v.label} <span className="tabular opacity-70">{v.count}</span>
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => set({ mine: !f.mine })}
-          aria-pressed={f.mine}
-          className={`pill px-3 py-1 rounded-full text-xs font-medium border ${f.mine ? 'bg-lavender border-lavender text-ink' : 'bg-white/70 border-lavender-soft text-ink-soft hover:text-ink'}`}
-        >
+      {/* One compact row of view options */}
+      <div className="flex flex-wrap items-center gap-1.5 text-sm">
+        <button onClick={() => set({ hideDone: !f.hideDone })} aria-pressed={f.hideDone} className={`${chipBase} ${f.hideDone ? chipOn : chipOff}`}>
+          Hide resolved
+        </button>
+        <button onClick={() => set({ mine: !f.mine })} aria-pressed={f.mine} className={`${chipBase} ${f.mine ? chipOn : chipOff}`}>
           Assigned to me
+        </button>
+        <button onClick={() => set({ follow: !f.follow })} aria-pressed={f.follow} className={`${chipBase} ${f.follow ? chipOn : chipOff}`}>
+          Follow playback
+        </button>
+        <button onClick={() => set({ compact: !f.compact })} aria-pressed={f.compact} className={`${chipBase} ${f.compact ? chipOn : chipOff}`}>
+          Compact
         </button>
         <button
           onClick={() => setShowFilters((s) => !s)}
           aria-expanded={showFilters}
-          className="pill text-xs text-ink-soft hover:text-ink underline decoration-dotted"
+          className="pill px-2 text-xs text-ink-soft hover:text-ink underline decoration-dotted"
         >
           More filters
         </button>
-        {activeFilters > 0 && (
-          <button onClick={clearFilters} className="pill text-xs text-ink-soft hover:text-ink underline decoration-dotted">
-            Clear ({activeFilters})
-          </button>
-        )}
-        <span className="ml-auto text-xs text-ink-soft hidden sm:inline">J / K: next / previous note</span>
+        <button
+          onClick={() => setShowKeys((s) => !s)}
+          aria-expanded={showKeys}
+          aria-label="Shortcuts and options"
+          title="Shortcuts and options"
+          className="pill ml-auto px-2.5 py-1 rounded-full text-xs border border-lavender-soft bg-white/70 text-ink-soft hover:text-ink"
+        >
+          ?
+        </button>
       </div>
 
-      {/* The one department control: filters this list and the markers on the timeline. */}
-      {deptChips.length > 0 && (
-        <div role="group" aria-label="Department. Filters the list and the timeline">
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {deptChips.map((c) => {
-              const on = dept === c.value;
-              return (
-                <button
-                  key={c.value}
-                  onClick={() => onDeptChange?.(on ? 'ALL' : c.value)}
-                  aria-pressed={on}
-                  title={c.label}
-                  className={`pill shrink-0 rounded-full border px-2.5 py-1 text-xs ${on ? 'bg-lavender border-lavender text-ink font-medium' : 'bg-white/70 border-lavender-soft text-ink-soft hover:text-ink'}`}
-                >
-                  {c.emoji ? <span aria-hidden="true">{c.emoji} </span> : null}
-                  {c.short} <span className="tabular opacity-70">{c.count}</span>
-                  <span className="sr-only"> ({c.label})</span>
-                </button>
-              );
-            })}
-          </div>
+      {showKeys && (
+        <div className="rounded-xl bg-lavender-soft/50 p-3 text-xs space-y-2">
+          <ul className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+            <li className="contents"><kbd className="font-mono font-semibold">N</kbd><span>Start a note at the current moment</span></li>
+            <li className="contents"><kbd className="font-mono font-semibold">Enter</kbd><span>Post the note (Shift+Enter for a new line)</span></li>
+            <li className="contents"><kbd className="font-mono font-semibold">J / K</kbd><span>Jump to the next / previous note</span></li>
+            <li className="contents"><kbd className="font-mono font-semibold">Esc</kbd><span>Close the note box, an edit panel or a menu</span></li>
+          </ul>
+          <label className="flex items-center gap-2 pt-1">
+            <input type="checkbox" checked={pauseOnType} onChange={(e) => togglePause(e.target.checked)} />
+            Pause the video when I start writing a note
+          </label>
         </div>
       )}
 
@@ -290,7 +311,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
         </div>
       )}
 
-      <div ref={listRef} className="relative space-y-3 lg:max-h-[70vh] lg:overflow-y-auto lg:pr-1">
+      <div ref={listRef} className={`relative lg:max-h-[70vh] lg:overflow-y-auto lg:pr-1 ${f.compact ? 'space-y-1.5' : 'space-y-3'}`}>
         {filtered.length === 0 ? (
           <p className="text-ink-soft text-sm italic text-center py-8">
             {total === 0 ? 'No notes yet. Press N to add the first one.' : 'No notes match these filters.'}
@@ -305,6 +326,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
               videoId={video.id}
               isCurrent={n.id === currentId}
               showAuthor={!singleAuthor}
+              compact={f.compact}
             />
           ))
         )}
