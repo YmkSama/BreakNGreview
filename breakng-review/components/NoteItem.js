@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toggleReactionAction, updateNoteFieldAction } from '@/app/videos/[id]/actions';
 import { NOTE_TAGS, NOTE_STATUSES, tagInfo, classLabels } from '@/lib/constants';
+
+const shortName = (name) => (name || 'Unknown').split(/[\s-]+/)[0];
 import { formatRange } from '@/lib/time';
 import { splitMentionSegments } from '@/lib/mentions';
 import NoteComposer from './NoteComposer';
@@ -44,6 +46,7 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
   const cls = classLabels(note.classes);
   const assignee = note.assignee || users.find((u) => u.id === note.assigneeId) || null;
   const resolved = status === 'RESOLVED';
+  const deptColor = cls[0]?.color;
 
   const jump = () => {
     if (note.timestampSeconds == null) return;
@@ -99,6 +102,7 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
   return (
     <div
       data-note-id={note.id}
+      style={deptColor && !resolved ? { backgroundColor: `${deptColor}40` } : undefined}
       className={`bg-white/70 rounded-2xl p-4 border transition-colors ${isCurrent ? 'border-[#6D63B0] ring-2 ring-lavender' : 'border-lavender-soft'} ${resolved ? 'opacity-75' : ''}`}
       aria-current={isCurrent ? 'true' : undefined}
     >
@@ -113,7 +117,7 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
         </button>
 
         {note.timestampSeconds != null && (
-          <button onClick={jump} className="px-2 py-0.5 rounded-full bg-sky-soft font-mono font-semibold tabular hover:brightness-95">
+          <button onClick={jump} className="pill px-2 py-0.5 rounded-full bg-sky-soft font-mono font-semibold tabular hover:brightness-95">
             {formatRange(note.timestampSeconds, note.endTimestampSeconds)}
           </button>
         )}
@@ -124,12 +128,15 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
         >
           {note.author?.name?.[0]?.toUpperCase() || '?'}
         </span>
-        <span className="font-medium truncate min-w-[6rem] flex-1">{note.author?.name || 'Unknown'}</span>
+        <span className="text-ink-soft truncate min-w-[3rem] flex-1" title={note.author?.name}>
+          <span className="sm:hidden">{shortName(note.author?.name)}</span>
+          <span className="hidden sm:inline">{note.author?.name || 'Unknown'}</span>
+        </span>
 
         <button
           onClick={() => setEditing((e) => !e)}
           aria-expanded={editing}
-          className="shrink-0 text-ink-soft hover:text-ink underline decoration-dotted"
+          className="pill shrink-0 text-ink-soft hover:text-ink underline decoration-dotted"
         >
           {editing ? 'Done' : 'Edit'}
         </button>
@@ -143,7 +150,7 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
             </span>
           )}
           {cls.map((c) => (
-            <span key={c.value} className="rounded-full bg-lavender-soft px-2 py-0.5" title={c.label}>
+            <span key={c.value} className="rounded-full bg-white/80 px-2 py-0.5" style={{ border: `1px solid ${c.color}` }} title={c.label}>
               <span aria-hidden="true">{c.emoji}</span> {c.label}
             </span>
           ))}
@@ -207,11 +214,11 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
       )}
 
       <div className="flex items-center gap-3 mt-2 text-xs text-ink-soft">
-        <button onClick={react} className={`px-2 py-0.5 rounded-full ${note.reactedByMe ? 'bg-butter text-ink' : 'bg-ink/5'}`}>
+        <button onClick={react} className={`pill px-2 py-0.5 rounded-full ${note.reactedByMe ? 'bg-butter text-ink' : 'bg-ink/5'}`}>
           <span aria-hidden="true">👍</span> {note.reactionCount || ''}
           <span className="sr-only">Agree</span>
         </button>
-        <button onClick={() => setReplying((r) => !r)} className="hover:text-ink">
+        <button onClick={() => setReplying((r) => !r)} className="pill hover:text-ink">
           Reply{note.replies?.length > 0 ? ` (${note.replies.length})` : ''}
         </button>
       </div>

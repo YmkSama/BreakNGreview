@@ -17,5 +17,5 @@ export default async function VideoPage({ params, searchParams }) {
   const [notes, users] = await Promise.all([getNotesForVideo(videoId, user.id), getUsers()]);
   const initialSeek = sp.t ? parseFloat(sp.t) : null;
 
-  return <VideoWorkspace video={video} initialNotes={notes} users={users} initialSeek={initialSeek} />;
+  return <VideoWorkspace video={video} initialNotes={notes} users={users} initialSeek={initialSeek} currentUserId={user.id} />;
 }

@@ -5,9 +5,9 @@ import { NOTE_TAGS, NOTE_STATUSES, NOTE_CLASSES, tagInfo, statusInfo, classLabel
 import { formatRange } from '@/lib/time';
 
 function buildMarkdown(groups) {
-  const lines = ['# BreakNG Tables — Production Notes', `_Generated ${new Date().toLocaleString()}_`, ''];
+  const lines = ['# BreakNG Tables: Production Notes', `_Generated ${new Date().toLocaleString()}_`, ''];
   for (const group of groups) {
-    lines.push(`## ${group.video.episodeNumber ? `#${group.video.episodeNumber} — ` : ''}${group.video.title} (${videoTypeLabel(group.video.type)})`);
+    lines.push(`## ${group.video.episodeNumber ? `#${group.video.episodeNumber}: ` : ''}${group.video.title} (${videoTypeLabel(group.video.type)})`);
     if (group.notes.length === 0) {
       lines.push('_No notes match the current filters._', '');
       continue;
@@ -69,6 +69,7 @@ export default function DocumentBuilder({ videos, users, notes }) {
   const [userIds, setUserIds] = useState(() => new Set(users.map((u) => u.id)));
   const [tags, setTags] = useState(() => new Set(NOTE_TAGS.map((t) => t.value)));
   const [classSet, setClassSet] = useState(() => new Set([...NOTE_CLASSES.map((c) => c.value), 'NONE']));
+  const [showFilters, setShowFilters] = useState(false);
   const [statuses, setStatuses] = useState(() => new Set(NOTE_STATUSES.map((s) => s.value)));
 
   const toggle = (set, setter, value) => {
@@ -114,9 +115,23 @@ export default function DocumentBuilder({ videos, users, notes }) {
 
   return (
     <div>
-      <h1 className="font-display text-2xl mb-4 no-print">Documents</h1>
+      <h1 className="font-display text-2xl mb-3 no-print">Documents</h1>
+
+      <div className="flex gap-2 mb-4 no-print flex-wrap items-center">
+        <button onClick={copyMarkdown} className="px-3 py-1.5 rounded-lg bg-lavender text-ink text-sm font-medium">Copy as Markdown</button>
+        <button onClick={downloadMarkdown} className="px-3 py-1.5 rounded-lg bg-mint text-ink text-sm font-medium">Download .md</button>
+        <button onClick={() => window.print()} className="px-3 py-1.5 rounded-lg bg-peach text-ink text-sm font-medium">Print / Save as PDF</button>
+        <button
+          onClick={() => setShowFilters((s) => !s)}
+          aria-expanded={showFilters}
+          className="lg:hidden px-3 py-1.5 rounded-lg bg-white/70 border border-lavender-soft text-sm text-ink-soft"
+        >
+          {showFilters ? 'Hide filters' : 'Choose what to include'}
+        </button>
+      </div>
+
       <div className="grid lg:grid-cols-[300px_1fr] gap-6">
-        <div className="space-y-5 no-print">
+        <div className={`${showFilters ? 'block' : 'hidden'} lg:block space-y-5 no-print`}>
           <FilterGroup title="Videos" items={videos.map((v) => ({ value: v.id, label: v.title }))} selected={videoIds} onToggle={(v) => toggle(videoIds, setVideoIds, v)} />
           <FilterGroup title="Team members" items={users.map((u) => ({ value: u.id, label: u.name }))} selected={userIds} onToggle={(v) => toggle(userIds, setUserIds, v)} />
           <FilterGroup title="Departments" items={[...NOTE_CLASSES.map((c) => ({ value: c.value, label: `${c.emoji} ${c.label}` })), { value: 'NONE', label: 'No department' }]} selected={classSet} onToggle={(v) => toggle(classSet, setClassSet, v)} />
@@ -126,11 +141,6 @@ export default function DocumentBuilder({ videos, users, notes }) {
         </div>
 
         <div>
-          <div className="flex gap-2 mb-3 no-print flex-wrap">
-            <button onClick={copyMarkdown} className="px-3 py-1.5 rounded-lg bg-lavender text-ink text-sm font-medium">Copy as Markdown</button>
-            <button onClick={downloadMarkdown} className="px-3 py-1.5 rounded-lg bg-mint text-ink text-sm font-medium">Download .md</button>
-            <button onClick={() => window.print()} className="px-3 py-1.5 rounded-lg bg-peach text-ink text-sm font-medium">Print / Save as PDF</button>
-          </div>
           <div className="bg-white rounded-2xl border border-lavender-soft p-6 whitespace-pre-wrap font-mono text-xs leading-relaxed max-h-[75vh] overflow-y-auto">
             {markdown}
           </div>

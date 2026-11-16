@@ -14,13 +14,13 @@ const NOTE_TAGS = [
 ];
 
 const NOTE_CLASSES = [
-  { value: 'SFX', label: 'Sound effects', emoji: '🔊' },
-  { value: 'MOTION_GRAPHICS', label: 'Motion graphics', emoji: '🎞️' },
-  { value: 'VFX', label: 'VFX', emoji: '✨' },
-  { value: 'CUT', label: 'Cut', emoji: '✂️' },
-  { value: 'TRANSITION', label: 'Transition', emoji: '🔀' },
-  { value: 'CAMERA_MOVE', label: 'Camera move', emoji: '🎥' },
-  { value: 'SOCIAL_CLIP', label: 'Social media clip suggestion', emoji: '📱' },
+  { value: 'SFX', label: 'Sound effects', emoji: '🔊', color: '#B9D9F2' },
+  { value: 'MOTION_GRAPHICS', label: 'Motion graphics', emoji: '🎞️', color: '#C9C6F0' },
+  { value: 'VFX', label: 'VFX', emoji: '✨', color: '#F6EAA6' },
+  { value: 'CUT', label: 'Cut', emoji: '✂️', color: '#F3C9DE' },
+  { value: 'TRANSITION', label: 'Transition', emoji: '🔀', color: '#B6E3D4' },
+  { value: 'CAMERA_MOVE', label: 'Camera move', emoji: '🎥', color: '#F7DCA6' },
+  { value: 'SOCIAL_CLIP', label: 'Social media clip suggestion', emoji: '📱', color: '#E3C2E8' },
 ];
 
 const NOTE_STATUSES = [

@@ -40,14 +40,24 @@ export default function TimelineMarkers({ notes, playerRef, time = 0 }) {
   // Departments actually used in this video, with counts, for the legend.
   const legend = useMemo(() => {
     const counts = {};
-    for (const n of timed) for (const c of n.classes || []) counts[c] = (counts[c] || 0) + 1;
-    return NOTE_CLASSES.filter((c) => counts[c.value]).map((c) => ({ ...c, count: counts[c.value] }));
+    let none = 0;
+    for (const n of timed) {
+      if ((n.classes || []).length === 0) none += 1;
+      for (const c of n.classes || []) counts[c] = (counts[c] || 0) + 1;
+    }
+    const items = NOTE_CLASSES.filter((c) => counts[c.value]).map((c) => ({ ...c, count: counts[c.value] }));
+    if (none > 0) items.push({ ...{ value: 'NONE', label: 'No department', emoji: null }, count: none });
+    return items;
   }, [timed]);
 
   const clusters = useMemo(() => {
     if (!duration || !width) return [];
     const visible = timed
-      .map((n) => ({ n, cls: classLabels(n.classes).filter((c) => !hidden.has(c.value)) }))
+      .map((n) => {
+        const real = classLabels(n.classes);
+        const cls = real.length === 0 ? [{ value: 'NONE', label: 'No department', emoji: null }] : real;
+        return { n, cls: cls.filter((c) => !hidden.has(c.value)) };
+      })
       .filter((x) => x.cls.length > 0)
       .sort((a, b) => a.n.timestampSeconds - b.n.timestampSeconds);
     const out = [];
@@ -76,8 +86,8 @@ export default function TimelineMarkers({ notes, playerRef, time = 0 }) {
     });
 
   return (
-    <div className="mt-2" role="group" aria-label="Note timeline">
-      <div ref={trackRef} className="relative h-11">
+    <div className="mt-3" role="group" aria-label="Note timeline">
+      <div ref={trackRef} className="relative h-9 sm:h-11">
         <div className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-lavender rounded-full" aria-hidden="true" />
 
         {timed.map((n) => (
@@ -99,6 +109,7 @@ export default function TimelineMarkers({ notes, playerRef, time = 0 }) {
         {clusters.map((c) => {
           const first = c.items[0];
           const size = c.items.length;
+          const face = (c.items.find((x) => x.cls[0].emoji) || first).cls[0];
           const label =
             size === 1
               ? `${formatTimestamp(first.n.timestampSeconds)} · ${first.cls.map((x) => x.label).join(', ')}`
@@ -109,10 +120,14 @@ export default function TimelineMarkers({ notes, playerRef, time = 0 }) {
               onClick={() => seek(first.n.timestampSeconds)}
               title={label}
               aria-label={`Jump to ${label}`}
-              className="absolute top-1/2 -translate-x-1/2 -translate-y-[85%] min-w-8 min-h-8 flex items-center justify-center text-lg leading-none hover:scale-125 transition"
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 sm:-translate-y-[70%] min-w-8 min-h-8 flex items-center justify-center text-lg leading-none hover:scale-125 transition"
               style={{ left: pct(first.n.timestampSeconds) }}
             >
-              <span aria-hidden="true">{first.cls[0].emoji}</span>
+              {face.emoji ? (
+                <span aria-hidden="true">{face.emoji}</span>
+              ) : (
+                <span aria-hidden="true" className="w-3 h-3 rounded-full bg-ink-soft/80 border-2 border-paper" />
+              )}
               {size > 1 && (
                 <span className="absolute -right-1 -top-1 rounded-full bg-paper border border-lavender text-xs leading-none px-1 py-px font-semibold tabular">
                   {size}
@@ -123,7 +138,7 @@ export default function TimelineMarkers({ notes, playerRef, time = 0 }) {
         })}
       </div>
 
-      <div className="flex justify-between text-xs text-ink-soft tabular font-mono" aria-hidden="true">
+      <div className="hidden sm:flex justify-between text-xs text-ink-soft tabular font-mono" aria-hidden="true">
         <span>0:00</span>
         <span>{formatTimestamp(duration)}</span>
       </div>
@@ -140,7 +155,12 @@ export default function TimelineMarkers({ notes, playerRef, time = 0 }) {
                 title={`${c.label}: ${on ? 'shown' : 'hidden'} on the timeline`}
                 className={`shrink-0 rounded-full border px-2 py-0.5 text-xs tabular ${on ? 'bg-white border-lavender text-ink' : 'bg-transparent border-lavender-soft text-ink-soft line-through'}`}
               >
-                <span aria-hidden="true">{c.emoji}</span> {c.count}
+                {c.emoji ? (
+                  <span aria-hidden="true">{c.emoji}</span>
+                ) : (
+                  <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full bg-ink-soft/80 align-middle" />
+                )}{' '}
+                {c.count}
                 <span className="sr-only"> {c.label}</span>
               </button>
             );

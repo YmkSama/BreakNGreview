@@ -7,7 +7,7 @@ import { NOTE_TAGS } from '@/lib/constants';
 import { formatTimestamp } from '@/lib/time';
 import ClassPicker from './ClassPicker';
 
-export default function NoteComposer({ videoId, users, playerRef, parentId, compact, onDone }) {
+export default function NoteComposer({ videoId, users, playerRef, parentId, compact, onDone, time = 0 }) {
   const router = useRouter();
   const formRef = useRef(null);
   const textRef = useRef(null);
@@ -23,6 +23,19 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
   const [timeHint, setTimeHint] = useState(null);
   const [showMore, setShowMore] = useState(false);
   const [open, setOpen] = useState(false);
+  const [pauseOnType, setPauseOnType] = useState(false);
+
+  useEffect(() => {
+    try {
+      setPauseOnType(localStorage.getItem('bnt:pause-on-type') === '1');
+    } catch (e) {}
+  }, []);
+  const togglePause = (on) => {
+    setPauseOnType(on);
+    try {
+      localStorage.setItem('bnt:pause-on-type', on ? '1' : '0');
+    } catch (e) {}
+  };
 
   // A new note starts as a single line and opens up when you focus it or start writing.
   const expanded = !!parentId || open || !!text.trim() || classes.length > 0 || capturedStart !== null || isRange;
@@ -63,7 +76,10 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
   const onFocusForm = () => {
     if (parentId) return;
     setOpen(true);
-    if (capturedStart === null) captureStart();
+    if (capturedStart === null) {
+      if (pauseOnType) playerRef?.current?.pauseVideo?.();
+      captureStart();
+    }
   };
   const onBlurForm = () => {
     if (parentId) return;
@@ -147,10 +163,13 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
               className="px-2.5 py-1 rounded-lg bg-sky-soft text-ink font-medium tabular"
               title="Re-mark the current video time"
             >
-              {capturedStart !== null ? `⏱ ${formatTimestamp(capturedStart)} · re-mark` : '⏱ Mark current time'}
+              {capturedStart !== null ? `⏱ Marked at ${formatTimestamp(capturedStart)} · re-mark` : '⏱ Mark current time'}
             </button>
             <label className="flex items-center gap-1 text-ink-soft">
               <input type="checkbox" checked={isRange} onChange={(e) => setIsRange(e.target.checked)} /> range
+            </label>
+            <label className="flex items-center gap-1 text-ink-soft">
+              <input type="checkbox" checked={pauseOnType} onChange={(e) => togglePause(e.target.checked)} /> pause while typing
             </label>
             {isRange && (
               <button type="button" onClick={captureEnd} className="px-2.5 py-1 rounded-lg bg-sky-soft text-ink font-medium tabular">
@@ -158,6 +177,9 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
               </button>
             )}
           </div>
+          {capturedStart !== null && Math.abs(time - capturedStart) > 3 && (
+            <p className="text-xs text-ink-soft tabular">The video is now at {formatTimestamp(time)}. Re-mark to use that time instead.</p>
+          )}
           {timeHint && <p className="text-xs text-ink bg-peach-soft rounded-lg px-2 py-1">{timeHint}</p>}
 
           <div>

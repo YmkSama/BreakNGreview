@@ -4,7 +4,7 @@ import { getUnreadCount } from '@/lib/queries';
 import TopNav from '@/components/TopNav';
 
 export const metadata = {
-  title: 'BreakNG Tables — Production Review',
+  title: 'BreakNG Tables | Production Review',
   description: 'Timestamped video review for the BreakNG Tables production team',
 };
 

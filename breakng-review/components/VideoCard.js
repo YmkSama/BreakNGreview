@@ -16,7 +16,7 @@ export default function VideoCard({ video, stats }) {
       </div>
       <div className="p-3">
         <p className="font-medium text-sm line-clamp-2">
-          {video.episodeNumber ? `#${video.episodeNumber} — ` : ''}
+          {video.episodeNumber ? `#${video.episodeNumber}: ` : ''}
           {video.title}
         </p>
         <p className="mt-1 text-xs text-ink-soft tabular">

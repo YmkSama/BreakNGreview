@@ -60,7 +60,7 @@ export default async function InfoPage() {
       <Section title="3. Leaving a note">
         <Steps
           items={[
-            <>Pause the video at the moment you want to comment on, then click into the note box (or press <strong>N</strong>). The time is stamped automatically. Use <strong>⏱ re-mark</strong> to change it.</>,
+            <>Play to the moment you want to comment on, then click into the note box (or press <strong>N</strong>). The time at that moment is stamped automatically. Tick <strong>pause while typing</strong> to freeze the video as you write, and use <strong>⏱ re-mark</strong> to change the time.</>,
             <>For a stretch of video, tick <strong>range</strong> and click <strong>→ Mark end</strong> at the end point.</>,
             <>Write your note. Type <strong>@name</strong> to mention a teammate. They&apos;ll get a notification.</>,
             <>Pick one or more <strong>departments</strong>. Open <strong>Feedback type &amp; assignee</strong> if you need them. Press <strong>Enter</strong> to post (Shift+Enter adds a new line).</>,
@@ -106,7 +106,7 @@ export default async function InfoPage() {
 
       <Section title="5. Finding things">
         <ul className="list-disc pl-5 space-y-1">
-          <li>Above the notes, switch between All, To do and Done. Open <strong>Filters</strong> to narrow by feedback type, department, author or assignee. Your choices are remembered.</li>
+          <li>Above the notes, switch between All, To do and Done. Tap <strong>Assigned to me</strong> or a department chip for a quick list, or open <strong>Filters</strong> to narrow by feedback type, author or assignee. Your choices are remembered.</li>
           <li>Tick <strong>Follow playback</strong> to keep the current note in view as the video plays, or press <strong>J</strong> / <strong>K</strong> to jump to the next or previous note. The note at the current time is outlined.</li>
           <li>The search bar at the top searches note text across all videos. Click a result to jump to that moment.</li>
           <li>
@@ -121,6 +121,15 @@ export default async function InfoPage() {
           The <strong>Documents</strong> tab builds a summary of notes to share or print. Choose which videos,
           teammates, departments, feedback types and statuses to include, then copy it as Markdown, download it, or print / save it as a PDF. Department emojis and labels are
           included on each note.
+        </p>
+      </Section>
+
+      <Section title="7. Markers: in and out of Premiere Pro">
+        <p>
+          <strong>Import markers</strong> (on a video page) reads a marker sheet exported from your editing software and turns
+          each marker into a note. <strong>Export markers</strong> does the reverse: it writes the notes as Premiere markers.
+          Choose the <strong>.xml</strong> to import into Premiere (File → Import), or a <strong>.csv</strong> marker template (Seconds In, Seconds Out, Name, Comment, Color).
+          For the XML, set the frame rate to match your sequence. In both, use the time offset if your timeline doesn&apos;t start at zero.
         </p>
       </Section>
 

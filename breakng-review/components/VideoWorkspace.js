@@ -7,10 +7,11 @@ import NotesPanel from './NotesPanel';
 import EditVideoControls from './EditVideoControls';
 import TimelineMarkers from './TimelineMarkers';
 import ImportMarkers from './ImportMarkers';
+import ExportMarkers from './ExportMarkers';
 import usePlayhead from './usePlayhead';
 import { videoTypeLabel } from '@/lib/constants';
 
-export default function VideoWorkspace({ video, initialNotes, users, initialSeek }) {
+export default function VideoWorkspace({ video, initialNotes, users, initialSeek, currentUserId }) {
   const playerRef = useRef(null);
   const time = usePlayhead(playerRef);
 
@@ -19,7 +20,7 @@ export default function VideoWorkspace({ video, initialNotes, users, initialSeek
       <Link href="/videos" className="text-sm text-ink-soft hover:text-ink">← All videos</Link>
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-1 mb-4">
         <h1 className="font-display text-2xl text-balance">
-          {video.episodeNumber ? `#${video.episodeNumber} — ` : ''}
+          {video.episodeNumber ? `#${video.episodeNumber}: ` : ''}
           {video.title}
           <span className="ml-2 align-middle text-xs font-sans font-medium bg-lavender-soft text-ink-soft rounded-full px-2 py-1">
             {videoTypeLabel(video.type)}
@@ -27,6 +28,7 @@ export default function VideoWorkspace({ video, initialNotes, users, initialSeek
         </h1>
         <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           <ImportMarkers videoId={video.id} />
+          <ExportMarkers video={video} notes={initialNotes} playerRef={playerRef} currentUserId={currentUserId} />
           <EditVideoControls video={video} />
         </div>
       </div>
@@ -36,7 +38,7 @@ export default function VideoWorkspace({ video, initialNotes, users, initialSeek
           <YouTubeEmbed youtubeId={video.youtubeId} playerRef={playerRef} initialSeek={initialSeek} />
           <TimelineMarkers notes={initialNotes} playerRef={playerRef} time={time} />
         </div>
-        <NotesPanel video={video} initialNotes={initialNotes} users={users} playerRef={playerRef} time={time} />
+        <NotesPanel video={video} initialNotes={initialNotes} users={users} playerRef={playerRef} time={time} currentUserId={currentUserId} />
       </div>
     </div>
   );
