@@ -39,9 +39,11 @@ export default async function SearchPage({ searchParams }) {
                     {formatRange(n.timestampSeconds, n.endTimestampSeconds)}
                   </span>
                 )}
-                <span className="rounded-full px-2 py-0.5" style={{ background: info.color, color: info.text }}>
-                  {info.label}
-                </span>
+                {n.tag !== 'GENERAL' && (
+                  <span className="rounded-full px-2 py-0.5" style={{ background: info.color, color: info.text }}>
+                    {info.label}
+                  </span>
+                )}
                 {classLabels(n.classes).map((c) => (
                   <span key={c.value} title={c.label}>{c.emoji}</span>
                 ))}

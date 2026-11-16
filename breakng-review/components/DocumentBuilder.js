@@ -106,7 +106,7 @@ export default function DocumentBuilder({ videos, users, notes }) {
           <FilterGroup title="Team members" items={users.map((u) => ({ value: u.id, label: u.name }))} selected={userIds} onToggle={(v) => toggle(userIds, setUserIds, v)} />
           <FilterGroup title="Tags" items={NOTE_TAGS.map((t) => ({ value: t.value, label: t.label }))} selected={tags} onToggle={(v) => toggle(tags, setTags, v)} />
           <FilterGroup title="Status" items={NOTE_STATUSES.map((s) => ({ value: s.value, label: s.label }))} selected={statuses} onToggle={(v) => toggle(statuses, setStatuses, v)} />
-          <p className="text-[11px] text-ink-soft">Untoggle a video, teammate, tag, or status to leave their notes out of the document.</p>
+          <p className="text-xs text-ink-soft">Untoggle a video, teammate, tag, or status to leave their notes out of the document.</p>
         </div>
 
         <div>

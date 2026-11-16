@@ -33,38 +33,38 @@ export default function NotesPanel({ video, initialNotes, users, playerRef }) {
     <div className="space-y-4">
       <NoteComposer videoId={video.id} users={users} playerRef={playerRef} />
 
-      <div className="flex flex-wrap gap-2 text-xs">
-        <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} className="rounded-lg border border-lavender-soft px-2 py-1 bg-white">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap text-xs">
+        <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} className="w-full sm:w-auto rounded-lg border border-lavender-soft px-2 py-1 bg-white">
           <option value="ALL">All tags</option>
           {NOTE_TAGS.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
         </select>
-        <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className="rounded-lg border border-lavender-soft px-2 py-1 bg-white">
+        <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className="w-full sm:w-auto rounded-lg border border-lavender-soft px-2 py-1 bg-white">
           <option value="ALL">All classes</option>
           {NOTE_CLASSES.map((c) => (
             <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
           ))}
         </select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-lavender-soft px-2 py-1 bg-white">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full sm:w-auto rounded-lg border border-lavender-soft px-2 py-1 bg-white">
           <option value="ALL">All statuses</option>
           {NOTE_STATUSES.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
-        <select value={authorFilter} onChange={(e) => setAuthorFilter(e.target.value)} className="rounded-lg border border-lavender-soft px-2 py-1 bg-white">
+        <select value={authorFilter} onChange={(e) => setAuthorFilter(e.target.value)} className="w-full sm:w-auto rounded-lg border border-lavender-soft px-2 py-1 bg-white">
           <option value="ALL">Everyone</option>
           {users.map((u) => (
             <option key={u.id} value={u.id}>{u.name}</option>
           ))}
         </select>
-        <select value={sortMode} onChange={(e) => setSortMode(e.target.value)} className="rounded-lg border border-lavender-soft px-2 py-1 bg-white ml-auto">
+        <select value={sortMode} onChange={(e) => setSortMode(e.target.value)} className="w-full sm:w-auto rounded-lg border border-lavender-soft px-2 py-1 bg-white sm:ml-auto">
           <option value="TIME">By timestamp</option>
           <option value="NEWEST">Newest first</option>
         </select>
       </div>
 
-      <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+      <div className="space-y-3 lg:max-h-[70vh] lg:overflow-y-auto lg:pr-1">
         {filtered.length === 0 ? (
           <p className="text-ink-soft text-sm italic text-center py-8">No notes match these filters yet.</p>
         ) : (

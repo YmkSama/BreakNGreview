@@ -13,7 +13,7 @@
   --color-rose-soft: #FBD8D8;
   --color-butter: #F6EAA6;
   --color-ink: #4A4560;
-  --color-ink-soft: #8A84A0;
+  --color-ink-soft: #544E75;
   --color-paper: #FFFDF9;
 
   --font-display: Georgia, "Iowan Old Style", Palatino, serif;
@@ -32,6 +32,19 @@ body {
 
 .font-display {
   font-family: var(--font-display);
+}
+
+/* Browser surfaces themed to the palette */
+::selection { background: #C9C6F0; color: #3A3550; }
+::placeholder { color: #6E6888; opacity: 1; }
+:focus-visible { outline: 2px solid #6D63B0; outline-offset: 2px; border-radius: 6px; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Touch devices: 44px targets and 16px form text (also stops iOS zooming into inputs) */
+@media (pointer: coarse) {
+  header a, header button, main button, main select { min-height: 44px; }
+  .status-toggle { min-width: 44px; }
+  main select, main input, main textarea, header input { font-size: 16px; }
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }

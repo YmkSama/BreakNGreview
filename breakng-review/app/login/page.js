@@ -44,7 +44,7 @@ export default async function LoginPage() {
           </div>
         </form>
 
-        <p className="text-[11px] text-ink-soft mt-6">
+        <p className="text-xs text-ink-soft mt-6">
           No password — this is a small trusted team space. Pick your name each time you visit on a new device.
         </p>
       </div>

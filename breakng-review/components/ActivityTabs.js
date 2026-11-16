@@ -49,7 +49,7 @@ export default function ActivityTabs({ activity, notifications }) {
         >
           For you
           {unread > 0 && (
-            <span className="inline-flex items-center justify-center text-[10px] font-bold bg-rose text-ink rounded-full min-w-[16px] h-4 px-1">
+            <span className="inline-flex items-center justify-center text-xs font-bold bg-rose text-ink rounded-full min-w-[18px] h-[18px] px-1">
               {unread}
             </span>
           )}
@@ -75,7 +75,7 @@ export default function ActivityTabs({ activity, notifications }) {
                       {formatRange(n.timestampSeconds, n.endTimestampSeconds)}
                     </span>
                   )}
-                  {!n.parentId && (
+                  {!n.parentId && n.tag !== 'GENERAL' && (
                     <span className="rounded-full px-2 py-0.5" style={{ background: info.color, color: info.text }}>
                       {info.label}
                     </span>

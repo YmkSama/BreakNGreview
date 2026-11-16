@@ -60,10 +60,10 @@ export default async function InfoPage() {
       <Section title="3. Leaving a note">
         <Steps
           items={[
-            <>Play the video to the moment you want to comment on, then click <strong>⏱ Mark current time</strong>.</>,
+            <>Pause the video at the moment you want to comment on, then click into the note box (or press <strong>N</strong>). The time is stamped automatically. Use <strong>⏱ re-mark</strong> to change it.</>,
             <>For a stretch of video, tick <strong>range</strong> and click <strong>→ Mark end</strong> at the end point.</>,
             <>Write your note. Type <strong>@name</strong> to mention a teammate. They&apos;ll get a notification.</>,
-            <>Pick one or more <strong>classes</strong>, choose a <strong>tag</strong>, optionally assign it to someone, then click <strong>Add note</strong>.</>,
+            <>Pick one or more <strong>classes</strong>. Open <strong>Tag &amp; assignee</strong> if you need them. Press <strong>Enter</strong> to post (Shift+Enter adds a new line).</>,
           ]}
         />
         <p>
@@ -98,9 +98,9 @@ export default async function InfoPage() {
           ))}
         </div>
         <p>
-          <strong>Status</strong> tracks the work:{' '}
-          {NOTE_STATUSES.map((s) => s.label).join(' → ')}. Anyone can change a note&apos;s tag, status or assignee from
-          the dropdowns on the note.
+          <strong>Status</strong> tracks the work ({NOTE_STATUSES.map((s) => s.label).join(' → ')}). Tap the circle at
+          the start of a note to mark it resolved, or tap again to reopen it. Use <strong>Edit</strong> on a note to
+          set In progress, or to change its tag, assignee or classes.
         </p>
       </Section>
 
@@ -126,7 +126,7 @@ export default async function InfoPage() {
       <Section title="Good to know">
         <ul className="list-disc pl-5 space-y-1">
           <li>Everyone on the team can see and edit everything, so double-check before you delete a video.</li>
-          <li>Notes are only saved when you click <strong>Add note</strong>, so post before switching videos.</li>
+          <li>Notes are only saved when you post them, so post before switching videos.</li>
         </ul>
       </Section>
     </div>
