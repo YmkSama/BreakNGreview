@@ -24,11 +24,13 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
   const [showMore, setShowMore] = useState(false);
   const [open, setOpen] = useState(false);
   const [pauseOnType, setPauseOnType] = useState(false);
+  const [touch, setTouch] = useState(false);
 
   useEffect(() => {
     try {
       setPauseOnType(localStorage.getItem('bnt:pause-on-type') === '1');
     } catch (e) {}
+    setTouch(window.matchMedia?.('(pointer: coarse)').matches || false);
   }, []);
   const togglePause = (on) => {
     setPauseOnType(on);
@@ -48,6 +50,10 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
     const t = currentTime();
     if (t === null) {
       setTimeHint('The video player is not ready yet. Wait for it to load, then re-mark the time.');
+      return;
+    }
+    if (t === 0 && set === setCapturedStart) {
+      setTimeHint('The video has not started. Play it to the moment you mean, then press "Mark current time". Without a time, the note posts without a timestamp.');
       return;
     }
     setTimeHint(null);
@@ -129,6 +135,11 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
 
   // Enter posts; Shift+Enter makes a new line.
   const onKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      textRef.current?.blur();
+      setOpen(false);
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit();
@@ -149,7 +160,7 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKeyDown}
         aria-label={parentId ? 'Reply' : 'New note'}
-        placeholder={parentId ? 'Write a reply… @mention a teammate' : 'Add a note at this moment… (press N)'}
+        placeholder={parentId ? 'Write a reply… @mention a teammate' : `Add a note at this moment…${touch ? '' : ' (press N)'}`}
         className="w-full rounded-xl border border-lavender-soft px-3 py-2 text-sm resize-none bg-white"
         rows={expanded ? (compact ? 2 : 3) : 1}
       />

@@ -14,13 +14,13 @@ const NOTE_TAGS = [
 ];
 
 const NOTE_CLASSES = [
-  { value: 'SFX', label: 'Sound effects', emoji: '🔊', color: '#B9D9F2' },
-  { value: 'MOTION_GRAPHICS', label: 'Motion graphics', emoji: '🎞️', color: '#C9C6F0' },
-  { value: 'VFX', label: 'VFX', emoji: '✨', color: '#F6EAA6' },
-  { value: 'CUT', label: 'Cut', emoji: '✂️', color: '#F3C9DE' },
-  { value: 'TRANSITION', label: 'Transition', emoji: '🔀', color: '#B6E3D4' },
-  { value: 'CAMERA_MOVE', label: 'Camera move', emoji: '🎥', color: '#F7DCA6' },
-  { value: 'SOCIAL_CLIP', label: 'Social media clip suggestion', emoji: '📱', color: '#E3C2E8' },
+  { value: 'SFX', short: 'SFX', label: 'Sound effects', emoji: '🔊', color: '#B9D9F2' },
+  { value: 'MOTION_GRAPHICS', short: 'Mograph', label: 'Motion graphics', emoji: '🎞️', color: '#C9C6F0' },
+  { value: 'VFX', short: 'VFX', label: 'VFX', emoji: '✨', color: '#F6EAA6' },
+  { value: 'CUT', short: 'Cut', label: 'Cut', emoji: '✂️', color: '#F3C9DE' },
+  { value: 'TRANSITION', short: 'Transition', label: 'Transition', emoji: '🔀', color: '#B6E3D4' },
+  { value: 'CAMERA_MOVE', short: 'Camera', label: 'Camera move', emoji: '🎥', color: '#F7DCA6' },
+  { value: 'SOCIAL_CLIP', short: 'Social', label: 'Social media clip suggestion', emoji: '📱', color: '#E3C2E8' },
 ];
 
 const NOTE_STATUSES = [

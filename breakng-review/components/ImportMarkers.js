@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { importMarkersAction } from '@/app/videos/[id]/actions';
 import { parseMarkers, markerNoteText } from '@/lib/markers';
@@ -26,6 +26,16 @@ export default function ImportMarkers({ videoId }) {
     setError(null);
     setResult(null);
   }
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') close();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   function close() {
     setOpen(false);

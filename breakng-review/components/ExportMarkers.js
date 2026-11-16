@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { classLabels } from '@/lib/constants';
 import { FRAME_RATES, DEFAULT_FPS, toMarkers, buildPremiereXml, buildMarkerCsv } from '@/lib/exportMarkers';
 import { formatTimestamp } from '@/lib/time';
@@ -29,6 +29,15 @@ export default function ExportMarkers({ video, notes, playerRef, currentUserId }
   const [scope, setScope] = useState('ALL');
   const [fps, setFps] = useState(DEFAULT_FPS);
   const [offset, setOffset] = useState('0');
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
   const offsetNum = parseFloat(offset) || 0;
   // Add the episode number only when the title doesn't already say it.

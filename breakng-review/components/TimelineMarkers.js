@@ -1,18 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NOTE_CLASSES, classLabels } from '@/lib/constants';
+import { classLabels } from '@/lib/constants';
 import { formatTimestamp } from '@/lib/time';
 
 const MARKER_PX = 30; // markers closer than this merge into one cluster
+const NO_DEPT = { value: 'NONE', label: 'No department', emoji: null };
 
-// Strip under the player: a rule with a faint tick for every timed note, class emoji on top
-// (merged into counted clusters where they would overlap), a "now" line for the playhead, and a
-// legend whose chips switch departments on and off.
-export default function TimelineMarkers({ notes, playerRef, time = 0 }) {
+// Strip under the player: a rule with a tick for every timed note, department emoji on top
+// (merged into counted clusters where they would overlap), and a "now" line for the playhead.
+// `dept` is the page's single department filter (the chips above the notes list).
+export default function TimelineMarkers({ notes, playerRef, time = 0, dept = 'ALL' }) {
   const [duration, setDuration] = useState(0);
   const [width, setWidth] = useState(0);
-  const [hidden, setHidden] = useState(() => new Set());
   const trackRef = useRef(null);
 
   useEffect(() => {
@@ -35,62 +35,49 @@ export default function TimelineMarkers({ notes, playerRef, time = 0 }) {
     return () => ro.disconnect();
   }, [duration]);
 
-  const timed = useMemo(() => notes.filter((n) => n.timestampSeconds != null), [notes]);
-
-  // Departments actually used in this video, with counts, for the legend.
-  const legend = useMemo(() => {
-    const counts = {};
-    let none = 0;
-    for (const n of timed) {
-      if ((n.classes || []).length === 0) none += 1;
-      for (const c of n.classes || []) counts[c] = (counts[c] || 0) + 1;
+  // Timed notes that match the department filter, each with the department(s) to show.
+  const shown = useMemo(() => {
+    const out = [];
+    for (const n of notes) {
+      if (n.timestampSeconds == null) continue;
+      const real = classLabels(n.classes);
+      if (dept === 'ALL') out.push({ n, cls: real.length ? real : [NO_DEPT] });
+      else if (dept === 'NONE') {
+        if (real.length === 0) out.push({ n, cls: [NO_DEPT] });
+      } else {
+        const mine = real.filter((c) => c.value === dept);
+        if (mine.length) out.push({ n, cls: mine });
+      }
     }
-    const items = NOTE_CLASSES.filter((c) => counts[c.value]).map((c) => ({ ...c, count: counts[c.value] }));
-    if (none > 0) items.push({ ...{ value: 'NONE', label: 'No department', emoji: null }, count: none });
-    return items;
-  }, [timed]);
+    return out.sort((a, b) => a.n.timestampSeconds - b.n.timestampSeconds);
+  }, [notes, dept]);
 
   const clusters = useMemo(() => {
     if (!duration || !width) return [];
-    const visible = timed
-      .map((n) => {
-        const real = classLabels(n.classes);
-        const cls = real.length === 0 ? [{ value: 'NONE', label: 'No department', emoji: null }] : real;
-        return { n, cls: cls.filter((c) => !hidden.has(c.value)) };
-      })
-      .filter((x) => x.cls.length > 0)
-      .sort((a, b) => a.n.timestampSeconds - b.n.timestampSeconds);
     const out = [];
-    for (const x of visible) {
+    for (const x of shown) {
       const px = (x.n.timestampSeconds / duration) * width;
       const last = out[out.length - 1];
       if (last && px - last.startPx < MARKER_PX) last.items.push(x);
       else out.push({ startPx: px, items: [x] });
     }
     return out;
-  }, [timed, hidden, duration, width]);
+  }, [shown, duration, width]);
 
-  if (!duration || timed.length === 0) return null;
+  if (!duration || notes.every((n) => n.timestampSeconds == null)) return null;
 
   const pct = (s) => `${Math.min(100, Math.max(0, (s / duration) * 100))}%`;
   const seek = (s) => {
     playerRef.current?.seekTo?.(s, true);
     playerRef.current?.playVideo?.();
   };
-  const toggleClass = (v) =>
-    setHidden((prev) => {
-      const next = new Set(prev);
-      if (next.has(v)) next.delete(v);
-      else next.add(v);
-      return next;
-    });
 
   return (
     <div className="mt-3" role="group" aria-label="Note timeline">
       <div ref={trackRef} className="relative h-9 sm:h-11">
         <div className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-lavender rounded-full" aria-hidden="true" />
 
-        {timed.map((n) => (
+        {shown.map(({ n }) => (
           <span
             key={`t${n.id}`}
             className="absolute top-1/2 w-0.5 h-3 -translate-x-1/2 -translate-y-1/2 bg-ink-soft/60 rounded-full"
@@ -142,31 +129,6 @@ export default function TimelineMarkers({ notes, playerRef, time = 0 }) {
         <span>0:00</span>
         <span>{formatTimestamp(duration)}</span>
       </div>
-
-      {legend.length > 0 && (
-        <div className="hidden sm:flex gap-1.5 overflow-x-auto pb-1 mt-1" role="group" aria-label="Show departments on the timeline">
-          {legend.map((c) => {
-            const on = !hidden.has(c.value);
-            return (
-              <button
-                key={c.value}
-                onClick={() => toggleClass(c.value)}
-                aria-pressed={on}
-                title={`${c.label}: ${on ? 'shown' : 'hidden'} on the timeline`}
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-xs tabular ${on ? 'bg-white border-lavender text-ink' : 'bg-transparent border-lavender-soft text-ink-soft line-through'}`}
-              >
-                {c.emoji ? (
-                  <span aria-hidden="true">{c.emoji}</span>
-                ) : (
-                  <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-full bg-ink-soft/80 align-middle" />
-                )}{' '}
-                {c.count}
-                <span className="sr-only"> {c.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

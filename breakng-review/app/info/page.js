@@ -51,8 +51,8 @@ export default async function InfoPage() {
           items={[
             <>Click <strong>+ Add video</strong>, give it a title, paste a YouTube link (or ID), choose a type and an optional episode number.</>,
             <>Click a video to open its page: the player is on the left, notes on the right.</>,
-            <>Use <strong>Edit</strong> on a video page to change its title, type or episode number.</>,
-            <><strong>Delete</strong> removes the video <em>and all its notes and saved documents</em>. It can&apos;t be undone.</>,
+            <>Use <strong>Edit video</strong> on a video page to change its title, type or episode number.</>,
+            <>Delete is in the <strong>⋯</strong> menu next to Edit video. It removes the video <em>and all its notes and saved documents</em>, and can&apos;t be undone.</>,
           ]}
         />
       </Section>
@@ -85,7 +85,7 @@ export default async function InfoPage() {
           ))}
         </div>
         <p>
-          Notes with a department get an emoji marker on the strip under the video. Click a marker to jump there. Where markers overlap they merge into one with a count. The small buttons under the strip turn each department on or off, and the purple line is where the video is now.
+          Notes with a department get an emoji marker on the strip under the video. Click a marker to jump there. Where markers overlap they merge into one with a count. The purple line is where the video is now. The department chips above the notes filter both the list and this strip.
         </p>
         <p>
           <strong>Feedback types</strong> say what kind of feedback it is (shown on a note only when it isn&apos;t General):
@@ -106,7 +106,7 @@ export default async function InfoPage() {
 
       <Section title="5. Finding things">
         <ul className="list-disc pl-5 space-y-1">
-          <li>Above the notes, switch between All, To do and Done. Tap <strong>Assigned to me</strong> or a department chip for a quick list, or open <strong>Filters</strong> to narrow by feedback type, author or assignee. Your choices are remembered.</li>
+          <li>Above the notes, switch between All, To do and Done. Tap <strong>Assigned to me</strong> or a department chip for a quick list (the strip under the video follows the department), or open <strong>More filters</strong> to narrow by feedback type, author or assignee. Press <strong>Esc</strong> to close a note box or edit panel. Your choices are remembered.</li>
           <li>Tick <strong>Follow playback</strong> to keep the current note in view as the video plays, or press <strong>J</strong> / <strong>K</strong> to jump to the next or previous note. The note at the current time is outlined.</li>
           <li>The search bar at the top searches note text across all videos. Click a result to jump to that moment.</li>
           <li>

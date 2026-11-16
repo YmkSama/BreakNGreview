@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateVideoAction, deleteVideoAction } from '@/app/videos/actions';
 import { VIDEO_TYPES } from '@/lib/constants';
@@ -8,11 +8,32 @@ import { VIDEO_TYPES } from '@/lib/constants';
 export default function EditVideoControls({ video }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [menu, setMenu] = useState(false);
   const [title, setTitle] = useState(video.title);
   const [type, setType] = useState(video.type);
   const [episodeNumber, setEpisodeNumber] = useState(video.episodeNumber ?? '');
   const [error, setError] = useState(null);
   const [pending, startTransition] = useTransition();
+  const menuRef = useRef(null);
+
+  // Escape closes the dialog or the menu; a click outside closes the menu.
+  useEffect(() => {
+    if (!open && !menu) return;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      setMenu(false);
+    };
+    const onDown = (e) => {
+      if (menu && menuRef.current && !menuRef.current.contains(e.target)) setMenu(false);
+    };
+    window.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onDown);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onDown);
+    };
+  }, [open, menu]);
 
   function openEditor() {
     setTitle(video.title);
@@ -32,6 +53,7 @@ export default function EditVideoControls({ video }) {
   }
 
   function remove() {
+    setMenu(false);
     if (!window.confirm(`Delete "${video.title}"? This also deletes all its notes and saved documents. This cannot be undone.`)) return;
     startTransition(async () => {
       const res = await deleteVideoAction(video.id);
@@ -43,12 +65,34 @@ export default function EditVideoControls({ video }) {
   return (
     <>
       <div className="flex gap-2 text-sm">
-        <button onClick={openEditor} className="px-3 py-1.5 rounded-lg bg-lavender-soft text-ink-soft hover:text-ink">
-          Edit
+        <button onClick={openEditor} aria-label="Edit video" className="px-3 py-1.5 rounded-lg bg-lavender-soft text-ink-soft hover:text-ink">
+          Edit video
         </button>
-        <button onClick={remove} disabled={pending} className="px-3 py-1.5 rounded-lg bg-rose-soft text-ink-soft hover:text-ink">
-          Delete
-        </button>
+
+        {/* Delete lives in an overflow menu so a stray tap can't land on it. */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenu((m) => !m)}
+            aria-haspopup="menu"
+            aria-expanded={menu}
+            aria-label="More video actions"
+            className="px-3 py-1.5 rounded-lg bg-lavender-soft text-ink-soft hover:text-ink"
+          >
+            <span aria-hidden="true">⋯</span>
+          </button>
+          {menu && (
+            <div role="menu" className="absolute right-0 mt-1 z-40 min-w-[11rem] rounded-xl border border-lavender-soft bg-paper shadow-lg p-1">
+              <button
+                role="menuitem"
+                onClick={remove}
+                disabled={pending}
+                className="w-full text-left px-3 py-2 rounded-lg text-sm text-[#8F3A3A] hover:bg-rose-soft"
+              >
+                Delete this video…
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {open && (

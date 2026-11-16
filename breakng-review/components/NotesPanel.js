@@ -7,14 +7,16 @@ import { NOTE_TAGS, NOTE_CLASSES } from '@/lib/constants';
 import { formatTimestamp } from '@/lib/time';
 
 const STORE_KEY = 'bnt:notes-filters';
-const DEFAULTS = { view: 'ALL', mine: false, tag: 'ALL', cls: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME', follow: false };
+const DEFAULTS = { view: 'ALL', mine: false, tag: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME', follow: false };
 
 const selectCls = 'w-full rounded-lg border border-lavender-soft px-2 py-1 bg-white';
 
-export default function NotesPanel({ video, initialNotes, users, playerRef, time = 0, currentUserId }) {
+// dept / onDeptChange: the one department filter, shared with the timeline above the player.
+export default function NotesPanel({ video, initialNotes, users, playerRef, time = 0, currentUserId, dept = 'ALL', onDeptChange }) {
   const [f, setF] = useState(DEFAULTS);
   const [showFilters, setShowFilters] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [composerVisible, setComposerVisible] = useState(true);
   const listRef = useRef(null);
   const set = (patch) => setF((prev) => ({ ...prev, ...patch }));
 
@@ -31,7 +33,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
     } catch (e) {}
   }, [f]);
 
-  // Hide the phone "Add note" bar while a field is focused (the on-screen keyboard is up).
+  // Phones: hide the "Add note" bar while a field is focused (keyboard up) or the composer is on screen.
   useEffect(() => {
     const onIn = (e) => {
       const t = e.target;
@@ -40,9 +42,16 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
     const onOut = () => setTyping(false);
     document.addEventListener('focusin', onIn);
     document.addEventListener('focusout', onOut);
+    const ta = document.querySelector('textarea[aria-label="New note"]');
+    let io;
+    if (ta && typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver(([entry]) => setComposerVisible(entry.isIntersecting), { threshold: 0.6 });
+      io.observe(ta);
+    }
     return () => {
       document.removeEventListener('focusin', onIn);
       document.removeEventListener('focusout', onOut);
+      io?.disconnect();
     };
   }, []);
 
@@ -50,7 +59,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
   const doneCount = initialNotes.filter(done).length;
   const total = initialNotes.length;
 
-  // Departments used on this video (plus "none"), with counts, as one-tap list filters.
+  // Departments used on this video (plus "none"), with counts. This is the single department control.
   const deptChips = useMemo(() => {
     const counts = {};
     let none = 0;
@@ -59,8 +68,8 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
       if (cls.length === 0) none += 1;
       for (const c of cls) counts[c] = (counts[c] || 0) + 1;
     }
-    const chips = NOTE_CLASSES.filter((c) => counts[c.value]).map((c) => ({ value: c.value, emoji: c.emoji, label: c.label, count: counts[c.value] }));
-    if (none > 0) chips.push({ value: 'NONE', emoji: null, label: 'No department', count: none });
+    const chips = NOTE_CLASSES.filter((c) => counts[c.value]).map((c) => ({ value: c.value, emoji: c.emoji, short: c.short, label: c.label, count: counts[c.value] }));
+    if (none > 0) chips.push({ value: 'NONE', emoji: null, short: 'No dept', label: 'No department', count: none });
     return chips;
   }, [initialNotes]);
 
@@ -70,7 +79,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
         (f.view === 'ALL' || (f.view === 'DONE' ? done(n) : !done(n))) &&
         (!f.mine || n.assigneeId === currentUserId) &&
         (f.tag === 'ALL' || n.tag === f.tag) &&
-        (f.cls === 'ALL' || (f.cls === 'NONE' ? (n.classes || []).length === 0 : (n.classes || []).includes(f.cls))) &&
+        (dept === 'ALL' || (dept === 'NONE' ? (n.classes || []).length === 0 : (n.classes || []).includes(dept))) &&
         (f.author === 'ALL' || n.authorId === parseInt(f.author, 10)) &&
         (f.assignee === 'ALL' || n.assigneeId === parseInt(f.assignee, 10))
     );
@@ -78,7 +87,10 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
       if (f.sort === 'NEWEST') return new Date(b.createdAt) - new Date(a.createdAt);
       return (a.timestampSeconds ?? Infinity) - (b.timestampSeconds ?? Infinity);
     });
-  }, [initialNotes, f, currentUserId]);
+  }, [initialNotes, f, dept, currentUserId]);
+
+  // With one author the name on every card is noise, so cards hide it.
+  const singleAuthor = useMemo(() => new Set(initialNotes.map((n) => n.authorId)).size <= 1, [initialNotes]);
 
   // Timed notes in time order: the basis for "current note" and j/k stepping.
   const timed = useMemo(
@@ -149,8 +161,11 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
   };
 
   const activeFilters =
-    ['tag', 'cls', 'author', 'assignee'].filter((k) => f[k] !== 'ALL').length + (f.sort !== 'TIME' ? 1 : 0) + (f.mine ? 1 : 0);
-  const clearFilters = () => set({ mine: false, tag: 'ALL', cls: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME' });
+    ['tag', 'author', 'assignee'].filter((k) => f[k] !== 'ALL').length + (f.sort !== 'TIME' ? 1 : 0) + (f.mine ? 1 : 0) + (dept !== 'ALL' ? 1 : 0);
+  const clearFilters = () => {
+    set({ mine: false, tag: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME' });
+    onDeptChange?.('ALL');
+  };
 
   const views = [
     { value: 'ALL', label: 'All', count: total },
@@ -214,33 +229,37 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
           aria-expanded={showFilters}
           className="pill text-xs text-ink-soft hover:text-ink underline decoration-dotted"
         >
-          Filters{activeFilters > 0 ? ` (${activeFilters})` : ''}
+          More filters
         </button>
         {activeFilters > 0 && (
           <button onClick={clearFilters} className="pill text-xs text-ink-soft hover:text-ink underline decoration-dotted">
-            Clear
+            Clear ({activeFilters})
           </button>
         )}
         <span className="ml-auto text-xs text-ink-soft hidden sm:inline">J / K: next / previous note</span>
       </div>
 
+      {/* The one department control: filters this list and the markers on the timeline. */}
       {deptChips.length > 0 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by department">
-          {deptChips.map((c) => {
-            const on = f.cls === c.value;
-            return (
-              <button
-                key={c.value}
-                onClick={() => set({ cls: on ? 'ALL' : c.value })}
-                aria-pressed={on}
-                title={c.label}
-                className={`pill shrink-0 rounded-full border px-2.5 py-1 text-xs tabular ${on ? 'bg-lavender border-lavender text-ink font-medium' : 'bg-white/70 border-lavender-soft text-ink-soft hover:text-ink'}`}
-              >
-                {c.emoji ? <span aria-hidden="true">{c.emoji}</span> : null} {c.emoji ? c.count : `None ${c.count}`}
-                <span className="sr-only"> {c.label}</span>
-              </button>
-            );
-          })}
+        <div role="group" aria-label="Department. Filters the list and the timeline">
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {deptChips.map((c) => {
+              const on = dept === c.value;
+              return (
+                <button
+                  key={c.value}
+                  onClick={() => onDeptChange?.(on ? 'ALL' : c.value)}
+                  aria-pressed={on}
+                  title={c.label}
+                  className={`pill shrink-0 rounded-full border px-2.5 py-1 text-xs ${on ? 'bg-lavender border-lavender text-ink font-medium' : 'bg-white/70 border-lavender-soft text-ink-soft hover:text-ink'}`}
+                >
+                  {c.emoji ? <span aria-hidden="true">{c.emoji} </span> : null}
+                  {c.short} <span className="tabular opacity-70">{c.count}</span>
+                  <span className="sr-only"> ({c.label})</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -251,13 +270,6 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
             {NOTE_TAGS.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
-          </select>
-          <select aria-label="Department" value={f.cls} onChange={(e) => set({ cls: e.target.value })} className={selectCls}>
-            <option value="ALL">Any department</option>
-            {NOTE_CLASSES.map((c) => (
-              <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
-            ))}
-            <option value="NONE">No department</option>
           </select>
           <select aria-label="Written by" value={f.author} onChange={(e) => set({ author: e.target.value })} className={selectCls}>
             <option value="ALL">Written by anyone</option>
@@ -271,7 +283,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </select>
-          <select aria-label="Sort" value={f.sort} onChange={(e) => set({ sort: e.target.value })} className={`${selectCls} col-span-2`}>
+          <select aria-label="Sort" value={f.sort} onChange={(e) => set({ sort: e.target.value })} className={selectCls}>
             <option value="TIME">Sort by timestamp</option>
             <option value="NEWEST">Sort newest first</option>
           </select>
@@ -285,16 +297,24 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
           </p>
         ) : (
           filtered.map((n) => (
-            <NoteItem key={n.id} note={n} users={users} playerRef={playerRef} videoId={video.id} isCurrent={n.id === currentId} />
+            <NoteItem
+              key={n.id}
+              note={n}
+              users={users}
+              playerRef={playerRef}
+              videoId={video.id}
+              isCurrent={n.id === currentId}
+              showAuthor={!singleAuthor}
+            />
           ))
         )}
       </div>
 
-      {/* Phones: the composer is at the top of the list, so keep a one-tap way to reach it. */}
-      {!typing && (
+      {/* Phones: a one-tap way back to the composer once it has scrolled off screen. */}
+      {!typing && !composerVisible && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3 bg-paper/95 border-t border-lavender-soft backdrop-blur no-print">
           <button onClick={openComposer} className="w-full rounded-xl bg-[#6D63B0] text-white font-semibold text-sm py-2.5 tabular">
-            + Add note at {formatTimestamp(time)}
+            + Add note{time > 0 ? ` at ${formatTimestamp(time)}` : ''}
           </button>
         </div>
       )}

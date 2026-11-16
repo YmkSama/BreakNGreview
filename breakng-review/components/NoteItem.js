@@ -32,7 +32,7 @@ function StatusGlyph({ status }) {
 
 const STATUS_LABEL = { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved' };
 
-export default function NoteItem({ note, users, playerRef, videoId, depth = 0, isCurrent = false }) {
+export default function NoteItem({ note, users, playerRef, videoId, depth = 0, isCurrent = false, showAuthor = true }) {
   const router = useRouter();
   const [replying, setReplying] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -102,8 +102,11 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
   return (
     <div
       data-note-id={note.id}
-      style={deptColor && !resolved ? { backgroundColor: `${deptColor}40` } : undefined}
-      className={`bg-white/70 rounded-2xl p-4 border transition-colors ${isCurrent ? 'border-[#6D63B0] ring-2 ring-lavender' : 'border-lavender-soft'} ${resolved ? 'opacity-75' : ''}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && editing) setEditing(false);
+      }}
+      style={deptColor && !resolved ? { backgroundColor: `${deptColor}66` } : undefined}
+      className={`note-card bg-white/70 rounded-2xl p-4 border transition-colors ${isCurrent ? 'border-[#6D63B0] ring-2 ring-lavender' : 'border-lavender-soft'} ${resolved ? 'opacity-75' : ''}`}
       aria-current={isCurrent ? 'true' : undefined}
     >
       <div className="flex items-center gap-2 flex-wrap text-xs mb-1.5">
@@ -122,20 +125,27 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
           </button>
         )}
 
-        <span
-          className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-          style={{ background: note.author?.color || '#eee' }}
-        >
-          {note.author?.name?.[0]?.toUpperCase() || '?'}
-        </span>
-        <span className="text-ink-soft truncate min-w-[3rem] flex-1" title={note.author?.name}>
-          <span className="sm:hidden">{shortName(note.author?.name)}</span>
-          <span className="hidden sm:inline">{note.author?.name || 'Unknown'}</span>
-        </span>
+        {showAuthor ? (
+          <>
+            <span
+              className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+              style={{ background: note.author?.color || '#eee' }}
+            >
+              {note.author?.name?.[0]?.toUpperCase() || '?'}
+            </span>
+            <span className="text-ink-soft truncate min-w-[3rem] flex-1" title={note.author?.name}>
+              <span className="sm:hidden">{shortName(note.author?.name)}</span>
+              <span className="hidden sm:inline">{note.author?.name || 'Unknown'}</span>
+            </span>
+          </>
+        ) : (
+          <span className="flex-1" />
+        )}
 
         <button
           onClick={() => setEditing((e) => !e)}
           aria-expanded={editing}
+          aria-label={editing ? 'Close editing' : `Edit note${note.timestampSeconds != null ? ` at ${formatRange(note.timestampSeconds, note.endTimestampSeconds)}` : ''}`}
           className="pill shrink-0 text-ink-soft hover:text-ink underline decoration-dotted"
         >
           {editing ? 'Done' : 'Edit'}
@@ -213,7 +223,7 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
         </p>
       )}
 
-      <div className="flex items-center gap-3 mt-2 text-xs text-ink-soft">
+      <div className={`note-actions flex items-center gap-3 mt-2 text-xs text-ink-soft ${replying || note.replies?.length > 0 || note.reactionCount > 0 || note.reactedByMe ? 'always' : ''}`}>
         <button onClick={react} className={`pill px-2 py-0.5 rounded-full ${note.reactedByMe ? 'bg-butter text-ink' : 'bg-ink/5'}`}>
           <span aria-hidden="true">👍</span> {note.reactionCount || ''}
           <span className="sr-only">Agree</span>
