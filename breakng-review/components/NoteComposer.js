@@ -168,7 +168,7 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
           {onDone && (
             <button type="button" onClick={onDone} className="text-xs text-ink-soft px-3 py-1.5">Cancel</button>
           )}
-          <button disabled={pending || !text.trim()} className="text-sm font-semibold bg-[#6D63B0] text-white px-4 py-1.5 rounded-lg disabled:opacity-50">
+          <button disabled={pending || !text.trim()} className="text-sm font-semibold bg-accent text-white px-4 py-1.5 rounded-lg disabled:opacity-50">
             {pending ? 'Posting…' : 'Reply'}
           </button>
         </div>
@@ -266,7 +266,7 @@ export default function NoteComposer({ videoId, users, playerRef, parentId, comp
             <p className="text-xs text-ink-soft hidden sm:block">Enter to post · Shift+Enter for a new line · Esc to close</p>
             <button
               disabled={pending || !text.trim()}
-              className="ml-auto text-sm font-semibold bg-[#6D63B0] text-white px-4 py-1.5 rounded-lg disabled:opacity-50"
+              className="ml-auto text-sm font-semibold bg-accent text-white px-4 py-1.5 rounded-lg disabled:opacity-50"
             >
               {pending ? 'Posting…' : 'Add note'}
             </button>

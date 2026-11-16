@@ -68,7 +68,7 @@ export default async function InfoPage() {
         />
         <p>
           Click a note&apos;s timestamp to jump the player to that moment. Use <strong>Reply</strong> to discuss a
-          note, and 👍 to agree with one.
+          note, and 👍 to agree with one. Use <strong>Edit</strong> on a note to fix its text, or <strong>Delete this note</strong> at the bottom of that panel. A deleted note (and its replies) can be undone for a few seconds.
         </p>
       </Section>
 
@@ -107,7 +107,7 @@ export default async function InfoPage() {
       <Section title="5. Finding things">
         <ul className="list-disc pl-5 space-y-1">
           <li>Above the notes, tap a department chip to show just that department (the strip under the video follows it), or use <strong>Hide resolved</strong>, <strong>Assigned to me</strong> and <strong>Compact</strong> (one line per note; tap a note to open it) , or open <strong>More filters</strong> to narrow by feedback type, author or assignee. Press <strong>Esc</strong> to close a note box or edit panel. Your choices are remembered.</li>
-          <li>Tick <strong>Follow playback</strong> to keep the current note in view as the video plays, or press <strong>J</strong> / <strong>K</strong> to jump to the next or previous note. The note at the current time is outlined.</li>
+          <li>Tick <strong>Follow playback</strong> to keep the current note in view as the video plays, or press <strong>J</strong> / <strong>K</strong> to jump to the next or previous note, <strong>U</strong> for the next note still to do, and <strong>R</strong> to resolve the note at the playhead. The note at the current time is outlined. Long lists start in <strong>Compact</strong> mode.</li>
           <li>The search bar at the top searches note text across all videos. Click a result to jump to that moment.</li>
           <li>
             <strong>Activity</strong> shows the latest notes from everyone, plus your notifications (mentions,

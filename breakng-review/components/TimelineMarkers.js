@@ -77,18 +77,22 @@ export default function TimelineMarkers({ notes, playerRef, time = 0, dept = 'AL
       <div ref={trackRef} className="relative h-9 sm:h-11">
         <div className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-lavender rounded-full" aria-hidden="true" />
 
-        {shown.map(({ n }) => (
-          <span
-            key={`t${n.id}`}
-            className="absolute top-1/2 w-0.5 h-3 -translate-x-1/2 -translate-y-1/2 bg-ink-soft/60 rounded-full"
-            style={{ left: pct(n.timestampSeconds) }}
-            aria-hidden="true"
-          />
-        ))}
+        {/* One tick per note: department colour while it is open, a faded green once resolved */}
+        {shown.map(({ n, cls }) => {
+          const resolved = n.status === 'RESOLVED';
+          return (
+            <span
+              key={`t${n.id}`}
+              className={`absolute top-1/2 w-[3px] h-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-ink-soft/50 ${resolved ? 'bg-done opacity-40' : ''}`}
+              style={{ left: pct(n.timestampSeconds), ...(resolved ? {} : { backgroundColor: cls[0].color || '#8A84A0' }) }}
+              aria-hidden="true"
+            />
+          );
+        })}
 
         {/* playhead */}
         <span
-          className="absolute top-0 bottom-0 w-0.5 -translate-x-1/2 bg-[#6D63B0] rounded-full pointer-events-none"
+          className="absolute top-0 bottom-0 w-0.5 -translate-x-1/2 bg-accent rounded-full pointer-events-none"
           style={{ left: pct(time) }}
           aria-hidden="true"
         />

@@ -13,6 +13,48 @@ const NOTIF_LABEL = {
   REPLY: 'replied to your note',
 };
 
+// Runs of three or more notes by one person on one video, posted close together (a marker import,
+// say), collapse into a single row so one import does not flood the feed.
+function groupActivity(items) {
+  const groups = [];
+  for (const n of items) {
+    const g = groups[groups.length - 1];
+    const last = g && g.items[g.items.length - 1];
+    if (last && last.authorId === n.authorId && last.videoId === n.videoId && Math.abs(new Date(last.createdAt) - new Date(n.createdAt)) < 15 * 60 * 1000) {
+      g.items.push(n);
+    } else {
+      groups.push({ items: [n] });
+    }
+  }
+  return groups;
+}
+
+function ActivityRow({ n, compact }) {
+  const info = tagInfo(n.tag);
+  return (
+    <Link
+      href={`/videos/${n.videoId}?t=${n.timestampSeconds || 0}`}
+      className={`block rounded-2xl border border-lavender-soft hover:shadow-sm transition ${compact ? 'bg-white/60 px-3 py-2' : 'bg-white/70 p-4'}`}
+    >
+      <div className="flex items-center gap-2 text-xs mb-1 flex-wrap">
+        {!compact && <span className="font-medium">{n.author?.name}</span>}
+        {!compact && <span className="text-ink-soft">on {n.video?.title}</span>}
+        {!compact && <span className="text-ink-soft tabular">{formatRelative(n.createdAt)}</span>}
+        {n.timestampSeconds != null && (
+          <span className="font-mono bg-sky-soft rounded-full px-2 py-0.5">{formatRange(n.timestampSeconds, n.endTimestampSeconds)}</span>
+        )}
+        {!n.parentId && n.tag !== 'GENERAL' && (
+          <span className="rounded-full px-2 py-0.5" style={{ background: info.color, color: info.text }}>{info.label}</span>
+        )}
+        {classLabels(n.classes).map((c) => (
+          <span key={c.value} title={c.label}>{c.emoji}</span>
+        ))}
+      </div>
+      <p className="text-sm line-clamp-2">{n.text}</p>
+    </Link>
+  );
+}
+
 export default function ActivityTabs({ activity, notifications }) {
   const [tab, setTab] = useState('ALL');
   const router = useRouter();
@@ -59,36 +101,26 @@ export default function ActivityTabs({ activity, notifications }) {
       {tab === 'ALL' ? (
         <div className="space-y-3">
           {activity.length === 0 && <p className="text-ink-soft text-sm italic">Nothing yet.</p>}
-          {activity.map((n) => {
-            const info = tagInfo(n.tag);
-            return (
-              <Link
-                key={n.id}
-                href={`/videos/${n.videoId}?t=${n.timestampSeconds || 0}`}
-                className="block bg-white/70 rounded-2xl p-4 border border-lavender-soft hover:shadow-sm transition"
-              >
-                <div className="flex items-center gap-2 text-xs mb-1 flex-wrap">
-                  <span className="font-medium">{n.author?.name}</span>
-                  <span className="text-ink-soft">on {n.video?.title}</span>
-                  <span className="text-ink-soft tabular">{formatRelative(n.createdAt)}</span>
-                  {n.timestampSeconds != null && (
-                    <span className="font-mono bg-sky-soft rounded-full px-2 py-0.5">
-                      {formatRange(n.timestampSeconds, n.endTimestampSeconds)}
-                    </span>
-                  )}
-                  {!n.parentId && n.tag !== 'GENERAL' && (
-                    <span className="rounded-full px-2 py-0.5" style={{ background: info.color, color: info.text }}>
-                      {info.label}
-                    </span>
-                  )}
-                  {classLabels(n.classes).map((c) => (
-                    <span key={c.value} title={c.label}>{c.emoji}</span>
+          {groupActivity(activity).map((g) =>
+            g.items.length >= 3 ? (
+              <details key={g.items[0].id} className="bg-white/70 rounded-2xl border border-lavender-soft">
+                <summary className="cursor-pointer list-none p-4 text-sm flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">{g.items[0].author?.name}</span>
+                  <span>added {g.items.length} notes to</span>
+                  <span className="font-medium">{g.items[0].video?.title}</span>
+                  <span className="text-ink-soft tabular text-xs">{formatRelative(g.items[0].createdAt)}</span>
+                  <span className="ml-auto text-xs text-ink-soft underline decoration-dotted">Show them</span>
+                </summary>
+                <div className="space-y-2 p-3 pt-0">
+                  {g.items.map((n) => (
+                    <ActivityRow key={n.id} n={n} compact />
                   ))}
                 </div>
-                <p className="text-sm line-clamp-2">{n.text}</p>
-              </Link>
-            );
-          })}
+              </details>
+            ) : (
+              g.items.map((n) => <ActivityRow key={n.id} n={n} />)
+            )
+          )}
         </div>
       ) : (
         <div className="space-y-3">

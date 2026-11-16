@@ -1,4 +1,4 @@
-const { eq, and, desc, asc, inArray, isNull } = require('drizzle-orm');
+const { eq, and, or, desc, asc, inArray, isNull } = require('drizzle-orm');
 const { db, users, videos, notes, reactions, notifications } = require('@/db');
 const { findMentions } = require('./mentions');
 const { USER_COLORS } = require('./constants');
@@ -238,6 +238,27 @@ async function updateNote(noteId, fields) {
   return updated;
 }
 
+// Change a note's text. People newly @mentioned by the edit get a notification.
+async function editNoteText(noteId, text, actorId) {
+  const found = await db.select().from(notes).where(eq(notes.id, noteId)).limit(1);
+  const old = found[0];
+  if (!old) return null;
+  const rows = await db.update(notes).set({ text, updatedAt: new Date() }).where(eq(notes.id, noteId)).returning();
+
+  const allUsers = await getUsers();
+  const before = new Set(findMentions(old.text, allUsers).map((u) => u.id));
+  for (const u of findMentions(text, allUsers)) {
+    if (!before.has(u.id)) await notify({ userId: u.id, actorId, noteId, videoId: old.videoId, type: 'MENTION' });
+  }
+  return rows[0];
+}
+
+// Replies are not tied to their parent by a foreign key, so they are removed explicitly.
+// Reactions and notifications cascade with the note.
+async function deleteNote(noteId) {
+  await db.delete(notes).where(or(eq(notes.id, noteId), eq(notes.parentId, noteId)));
+}
+
 async function toggleReaction(noteId, userId) {
   const existing = await db
     .select()
@@ -270,7 +291,7 @@ async function searchNotes(query) {
 // ---------------------------------------------------------------------------
 // Activity feed — recent top-level notes and replies across all videos
 // ---------------------------------------------------------------------------
-async function getRecentActivity(limit = 50) {
+async function getRecentActivity(limit = 200) {
   const all = await db.select().from(notes).orderBy(desc(notes.createdAt)).limit(limit);
   const allVideos = await getVideos();
   const videoById = Object.fromEntries(allVideos.map((v) => [v.id, v]));
@@ -327,6 +348,8 @@ module.exports = {
   createNote,
   createNotesBulk,
   updateNote,
+  editNoteText,
+  deleteNote,
   toggleReaction,
   searchNotes,
   getRecentActivity,

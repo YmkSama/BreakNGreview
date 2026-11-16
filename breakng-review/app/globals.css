@@ -15,6 +15,9 @@
   --color-ink: #4A4560;
   --color-ink-soft: #544E75;
   --color-paper: #FFFDF9;
+  --color-accent: #6D63B0;
+  --color-done: #2F6A3E;
+  --color-danger: #8F3A3A;
 
   --font-display: Georgia, "Iowan Old Style", Palatino, serif;
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

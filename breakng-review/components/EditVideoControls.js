@@ -86,7 +86,7 @@ export default function EditVideoControls({ video }) {
                 role="menuitem"
                 onClick={remove}
                 disabled={pending}
-                className="w-full text-left px-3 py-2 rounded-lg text-sm text-[#8F3A3A] hover:bg-rose-soft"
+                className="w-full text-left px-3 py-2 rounded-lg text-sm text-danger hover:bg-rose-soft"
               >
                 Delete this video…
               </button>

@@ -5,6 +5,20 @@ import { searchNotes } from '@/lib/queries';
 import { formatRange } from '@/lib/time';
 import { tagInfo, classLabels } from '@/lib/constants';
 
+// Wrap each match of the search words in <mark>.
+function Highlight({ text, q }) {
+  const words = q.split(/\s+/).filter((w) => w.length > 1).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (words.length === 0) return text;
+  const parts = text.split(new RegExp(`(${words.join('|')})`, 'ig'));
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <mark key={i} className="bg-butter rounded px-0.5">{part}</mark>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 export default async function SearchPage({ searchParams }) {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
@@ -21,6 +35,9 @@ export default async function SearchPage({ searchParams }) {
 
       {!q && <p className="text-ink-soft text-sm">Type something in the search bar above.</p>}
       {q && results.length === 0 && <p className="text-ink-soft text-sm italic">No notes matched.</p>}
+      {q && results.length > 0 && (
+        <p className="text-ink-soft text-sm mb-3 tabular">{results.length} note{results.length === 1 ? '' : 's'} matched.</p>
+      )}
 
       <div className="space-y-3">
         {results.map((n) => {
@@ -48,7 +65,7 @@ export default async function SearchPage({ searchParams }) {
                   <span key={c.value} title={c.label}>{c.emoji}</span>
                 ))}
               </div>
-              <p className="text-sm">{n.text}</p>
+              <p className="text-sm"><Highlight text={n.text} q={q} /></p>
             </Link>
           );
         })}

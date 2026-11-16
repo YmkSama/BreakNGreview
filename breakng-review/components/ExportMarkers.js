@@ -156,7 +156,7 @@ export default function ExportMarkers({ video, notes, playerRef, currentUserId }
               <button
                 onClick={onDownload}
                 disabled={markers.length === 0}
-                className="px-4 py-2 rounded-xl bg-[#6D63B0] text-white font-semibold text-sm disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-accent text-white font-semibold text-sm disabled:opacity-50"
               >
                 Download {format === 'XML' ? '.xml' : '.csv'}
               </button>

@@ -70,6 +70,7 @@ export default function DocumentBuilder({ videos, users, notes }) {
   const [tags, setTags] = useState(() => new Set(NOTE_TAGS.map((t) => t.value)));
   const [classSet, setClassSet] = useState(() => new Set([...NOTE_CLASSES.map((c) => c.value), 'NONE']));
   const [showFilters, setShowFilters] = useState(false);
+  const [view, setView] = useState('PREVIEW');
   const [statuses, setStatuses] = useState(() => new Set(NOTE_STATUSES.map((s) => s.value)));
 
   const toggle = (set, setter, value) => {
@@ -141,9 +142,69 @@ export default function DocumentBuilder({ videos, users, notes }) {
         </div>
 
         <div>
-          <div className="bg-white rounded-2xl border border-lavender-soft p-6 whitespace-pre-wrap font-mono text-xs leading-relaxed max-h-[75vh] overflow-y-auto">
-            {markdown}
+          <div className="flex gap-1 mb-2 no-print" role="group" aria-label="Document view">
+            {['PREVIEW', 'MARKDOWN'].map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={`px-3 py-1 rounded-full text-xs font-medium border ${view === v ? 'bg-lavender border-lavender text-ink' : 'bg-white/70 border-lavender-soft text-ink-soft'}`}
+              >
+                {v === 'PREVIEW' ? 'Preview' : 'Markdown'}
+              </button>
+            ))}
           </div>
+          {view === 'MARKDOWN' ? (
+            <div className="bg-white rounded-2xl border border-lavender-soft p-6 whitespace-pre-wrap font-mono text-xs leading-relaxed max-h-[75vh] overflow-y-auto">
+              {markdown}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-lavender-soft p-6 max-h-[75vh] overflow-y-auto space-y-6">
+              <h2 className="font-display text-xl">BreakNG Tables: Production Notes</h2>
+              {groups.map((g) => (
+                <section key={g.video.id}>
+                  <h3 className="font-display text-lg mb-2">
+                    {g.video.episodeNumber ? `#${g.video.episodeNumber}: ` : ''}
+                    {g.video.title} <span className="text-xs font-sans text-ink-soft">({videoTypeLabel(g.video.type)})</span>
+                  </h3>
+                  {g.notes.length === 0 ? (
+                    <p className="text-sm text-ink-soft italic">No notes match the current filters.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {g.notes.map((n) => (
+                        <li key={n.id} className="text-sm">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            {n.timestampSeconds != null && (
+                              <span className="font-mono text-xs font-semibold bg-sky-soft rounded-full px-2 py-0.5 tabular">
+                                {formatRange(n.timestampSeconds, n.endTimestampSeconds)}
+                              </span>
+                            )}
+                            <span className="whitespace-pre-wrap">{n.text}</span>
+                          </div>
+                          <p className="text-xs text-ink-soft mt-0.5">
+                            {[
+                              n.author?.name,
+                              n.tag !== 'GENERAL' ? tagInfo(n.tag).label : null,
+                              classLabels(n.classes).map((c) => `${c.emoji} ${c.label}`).join(', ') || null,
+                              statusInfo(n.status).label,
+                              n.assignee ? `assigned to ${n.assignee.name}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                          {n.replies.map((r) => (
+                            <p key={r.id} className="text-xs ml-4 mt-1 text-ink-soft">
+                              Reply, {r.author?.name || 'Unknown'}: {r.text}
+                            </p>
+                          ))}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

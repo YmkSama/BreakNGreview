@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createNote, createNotesBulk, updateNote, toggleReaction } from '@/lib/queries';
+import { createNote, createNotesBulk, updateNote, editNoteText, deleteNote, toggleReaction } from '@/lib/queries';
 import { getCurrentUser } from '@/lib/auth';
 import { NOTE_CLASSES } from '@/lib/constants';
 
@@ -47,6 +47,31 @@ export async function updateNoteFieldAction(noteId, videoId, field, value) {
   await updateNote(noteId, { [field]: value, actorId: user.id });
   revalidatePath(`/videos/${videoId}`);
   revalidatePath('/activity');
+  return { ok: true };
+}
+
+export async function editNoteTextAction(noteId, videoId, text) {
+  const user = await getCurrentUser();
+  if (!user) return { error: 'Not logged in' };
+  const clean = (text || '').toString().trim().slice(0, 5000);
+  if (!clean) return { error: 'A note cannot be empty. Delete it instead.' };
+
+  await editNoteText(noteId, clean, user.id);
+  revalidatePath(`/videos/${videoId}`);
+  revalidatePath('/activity');
+  revalidatePath('/documents');
+  return { ok: true };
+}
+
+export async function deleteNoteAction(noteId, videoId) {
+  const user = await getCurrentUser();
+  if (!user) return { error: 'Not logged in' };
+
+  await deleteNote(noteId);
+  revalidatePath(`/videos/${videoId}`);
+  revalidatePath('/videos');
+  revalidatePath('/activity');
+  revalidatePath('/documents');
   return { ok: true };
 }
 

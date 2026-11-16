@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { toggleReactionAction, updateNoteFieldAction } from '@/app/videos/[id]/actions';
+import { toggleReactionAction, updateNoteFieldAction, editNoteTextAction, deleteNoteAction } from '@/app/videos/[id]/actions';
 import { NOTE_TAGS, NOTE_STATUSES, tagInfo, classLabels } from '@/lib/constants';
 
 const shortName = (name) => (name || 'Unknown').split(/[\s-]+/)[0];
@@ -37,6 +37,14 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
   const [replying, setReplying] = useState(false);
   const [editing, setEditing] = useState(false);
   const [openCompact, setOpenCompact] = useState(false);
+  const [draft, setDraft] = useState(note.text);
+  const [textError, setTextError] = useState(null);
+  const [savingText, setSavingText] = useState(false);
+  const [editingReply, setEditingReply] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const deleteTimer = useRef(null);
+  useEffect(() => setDraft(note.text), [note.text]);
+  useEffect(() => () => clearTimeout(deleteTimer.current), []);
   const [status, setStatus] = useState(note.status);
   const [undo, setUndo] = useState(false);
   const undoTimer = useRef(null);
@@ -82,8 +90,50 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
   };
 
   const segments = splitMentionSegments(note.text.trim(), users);
+
+  const saveText = async () => {
+    const next = draft.trim();
+    if (!next || next === note.text.trim()) {
+      setEditingReply(false);
+      return;
+    }
+    setSavingText(true);
+    setTextError(null);
+    const res = await editNoteTextAction(note.id, videoId, next);
+    setSavingText(false);
+    if (res?.error) return setTextError(res.error);
+    setEditingReply(false);
+    router.refresh();
+  };
+
+  // Delete waits 6 seconds so it can be undone; closing the page inside that window cancels it.
+  const startDelete = () => {
+    setDeleting(true);
+    deleteTimer.current = setTimeout(async () => {
+      const res = await deleteNoteAction(note.id, videoId);
+      if (res?.error) setDeleting(false);
+      else router.refresh();
+    }, 6000);
+  };
+  const undoDelete = () => {
+    clearTimeout(deleteTimer.current);
+    setDeleting(false);
+  };
+
+  if (deleting) {
+    return (
+      <div
+        data-note-id={note.id}
+        role="status"
+        className={`flex items-center gap-2 text-sm rounded-xl border border-lavender-soft bg-white/60 px-3 py-2 ${depth > 0 ? 'ml-5 mt-3' : ''}`}
+      >
+        {depth > 0 ? 'Reply' : 'Note'} deleted.
+        <button onClick={undoDelete} className="pill font-semibold underline">Undo</button>
+      </div>
+    );
+  }
   const tint = deptColor && !resolved ? { backgroundColor: `${deptColor}66` } : undefined;
-  const ring = isCurrent ? 'border-[#6D63B0] ring-2 ring-lavender' : 'border-lavender-soft';
+  const ring = isCurrent ? 'border-accent ring-2 ring-lavender' : 'border-lavender-soft';
 
   if (depth > 0) {
     return (
@@ -97,7 +147,36 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
           </span>
           <span className="font-medium">{note.author?.name || 'Unknown'}</span>
         </div>
-        <NoteBody segments={segments} />
+        {editingReply ? (
+          <div className="space-y-1.5">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setEditingReply(false);
+                  setDraft(note.text);
+                }
+              }}
+              aria-label="Edit reply"
+              rows={2}
+              className="w-full rounded-lg border border-lavender-soft px-2 py-1.5 text-sm bg-white"
+            />
+            {textError && <p role="alert" className="text-xs bg-rose-soft rounded px-2 py-1">{textError}</p>}
+            <div className="flex gap-2 text-xs">
+              <button onClick={saveText} disabled={savingText} className="pill font-semibold bg-accent text-white px-3 py-1 rounded-lg">{savingText ? 'Saving…' : 'Save'}</button>
+              <button onClick={() => { setEditingReply(false); setDraft(note.text); }} className="pill text-ink-soft px-2">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <NoteBody segments={segments} />
+            <div className="note-actions mt-1 flex gap-3 text-xs text-ink-soft">
+              <button onClick={() => setEditingReply(true)} className="pill hover:text-ink underline decoration-dotted" aria-label="Edit reply">Edit</button>
+              <button onClick={startDelete} className="pill hover:text-ink underline decoration-dotted" aria-label="Delete reply">Delete</button>
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -228,6 +307,24 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
 
       {editing && (
         <div className="mb-2 space-y-2 rounded-xl bg-lavender-soft/50 p-3">
+          <label className="block text-xs">
+            Note text
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={Math.min(8, Math.max(2, draft.split('\n').length))}
+              className="mt-1 w-full rounded-lg border border-lavender-soft px-2 py-1.5 text-sm bg-white"
+            />
+          </label>
+          {textError && <p role="alert" className="text-xs bg-rose-soft rounded px-2 py-1">{textError}</p>}
+          {draft.trim() !== note.text.trim() && (
+            <div className="flex gap-2 text-xs">
+              <button onClick={saveText} disabled={savingText || !draft.trim()} className="pill font-semibold bg-accent text-white px-3 py-1 rounded-lg disabled:opacity-50">
+                {savingText ? 'Saving…' : 'Save text'}
+              </button>
+              <button onClick={() => setDraft(note.text)} className="pill text-ink-soft px-2">Reset</button>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 text-xs">
             <label className="flex items-center gap-1">
               Feedback type
@@ -268,6 +365,9 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0, i
           </div>
           <p className="text-xs">Department</p>
           <ClassPicker value={note.classes || []} onChange={(v) => changeField('classes', v)} />
+          <button onClick={startDelete} className="pill text-xs text-danger hover:underline">
+            Delete this note
+          </button>
         </div>
       )}
 

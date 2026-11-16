@@ -31,7 +31,7 @@ export default function TopNav({ user, unread }) {
           <span className="text-ink-soft hidden sm:inline">{user.name}</span>
           <form action={logoutAction}>
             <button className="text-ink-soft hover:text-ink underline decoration-dotted text-xs" aria-label={`Switch user (signed in as ${user.name})`}>
-              switch
+              Switch user
             </button>
           </form>
         </div>

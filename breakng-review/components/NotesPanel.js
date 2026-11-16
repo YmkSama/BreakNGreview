@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { updateNoteFieldAction } from '@/app/videos/[id]/actions';
 import NoteComposer from './NoteComposer';
 import NoteItem from './NoteItem';
 import { NOTE_TAGS, NOTE_CLASSES } from '@/lib/constants';
@@ -8,7 +10,7 @@ import { formatTimestamp } from '@/lib/time';
 
 const STORE_KEY = 'bnt:notes-filters';
 const PAUSE_KEY = 'bnt:pause-on-type';
-const DEFAULTS = { hideDone: false, mine: false, tag: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME', follow: false, compact: false };
+const DEFAULTS = { hideDone: false, mine: false, tag: 'ALL', author: 'ALL', assignee: 'ALL', sort: 'TIME', follow: false, compact: null };
 
 const selectCls = 'w-full rounded-lg border border-lavender-soft px-2 py-1 bg-white';
 const chipBase = 'pill px-3 py-1 rounded-full text-xs font-medium border';
@@ -17,6 +19,7 @@ const chipOff = 'bg-white/70 border-lavender-soft text-ink-soft hover:text-ink';
 
 // dept / onDeptChange: the one department filter, shared with the timeline above the player.
 export default function NotesPanel({ video, initialNotes, users, playerRef, time = 0, currentUserId, dept = 'ALL', onDeptChange }) {
+  const router = useRouter();
   const [f, setF] = useState(DEFAULTS);
   const [showFilters, setShowFilters] = useState(false);
   const [showKeys, setShowKeys] = useState(false);
@@ -76,6 +79,8 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
   const done = (n) => n.status === 'RESOLVED';
   const doneCount = initialNotes.filter(done).length;
   const total = initialNotes.length;
+  // Long lists start compact; once you press Compact your choice is remembered.
+  const compactOn = f.compact ?? total > 25;
 
   // Departments used on this video (plus "none"), with counts. This is the single department control.
   const deptChips = useMemo(() => {
@@ -159,18 +164,41 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
     },
     [playerRef, timed]
   );
+  // u: jump to the next note still to do after the playhead (wrapping to the first).
+  const nextTodo = useCallback(() => {
+    const p = playerRef.current;
+    const now = p?.getCurrentTime?.();
+    if (!p || typeof now !== 'number') return;
+    const todo = timed.filter((n) => n.status !== 'RESOLVED');
+    const target = todo.find((n) => n.timestampSeconds > now + 0.6) || todo[0];
+    if (!target) return;
+    p.seekTo?.(target.timestampSeconds, true);
+    setTimeout(() => scrollToNote(target.id), 150);
+  }, [playerRef, timed, scrollToNote]);
+
+  // r: resolve (or reopen) the note at the playhead.
+  const resolveCurrent = useCallback(async () => {
+    if (currentId == null) return;
+    const n = initialNotes.find((x) => x.id === currentId);
+    if (!n) return;
+    await updateNoteFieldAction(n.id, video.id, 'status', n.status === 'RESOLVED' ? 'OPEN' : 'RESOLVED');
+    router.refresh();
+  }, [currentId, initialNotes, video.id, router]);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key !== 'j' && e.key !== 'k') return;
+      if (!['j', 'k', 'u', 'r'].includes(e.key)) return;
       const el = document.activeElement;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
       e.preventDefault();
-      step(e.key === 'j' ? 1 : -1);
+      if (e.key === 'u') nextTodo();
+      else if (e.key === 'r') resolveCurrent();
+      else step(e.key === 'j' ? 1 : -1);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [step]);
+  }, [step, nextTodo, resolveCurrent]);
 
   const openComposer = () => {
     const ta = document.querySelector('textarea[aria-label="New note"]');
@@ -187,6 +215,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
 
   return (
     <div className="space-y-3 pb-20 lg:pb-0">
+      <h2 className="sr-only">Notes</h2>
       <NoteComposer videoId={video.id} users={users} playerRef={playerRef} time={time} />
 
       {total > 0 && (
@@ -200,7 +229,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
             )}
           </div>
           <div className="h-1.5 rounded-full bg-lavender-soft overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={doneCount} aria-label="Notes resolved">
-            <div className="h-full bg-[#2F6A3E] transition-[width] duration-500 ease-out" style={{ width: `${(doneCount / total) * 100}%` }} />
+            <div className="h-full bg-done transition-[width] duration-500 ease-out" style={{ width: `${(doneCount / total) * 100}%` }} />
           </div>
         </div>
       )}
@@ -248,7 +277,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
         <button onClick={() => set({ follow: !f.follow })} aria-pressed={f.follow} className={`${chipBase} ${f.follow ? chipOn : chipOff}`}>
           Follow playback
         </button>
-        <button onClick={() => set({ compact: !f.compact })} aria-pressed={f.compact} className={`${chipBase} ${f.compact ? chipOn : chipOff}`}>
+        <button onClick={() => set({ compact: !compactOn })} aria-pressed={compactOn} className={`${chipBase} ${compactOn ? chipOn : chipOff}`}>
           Compact
         </button>
         <button
@@ -275,6 +304,8 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
             <li className="contents"><kbd className="font-mono font-semibold">N</kbd><span>Start a note at the current moment</span></li>
             <li className="contents"><kbd className="font-mono font-semibold">Enter</kbd><span>Post the note (Shift+Enter for a new line)</span></li>
             <li className="contents"><kbd className="font-mono font-semibold">J / K</kbd><span>Jump to the next / previous note</span></li>
+            <li className="contents"><kbd className="font-mono font-semibold">U</kbd><span>Jump to the next note still to do</span></li>
+            <li className="contents"><kbd className="font-mono font-semibold">R</kbd><span>Resolve (or reopen) the note at the playhead</span></li>
             <li className="contents"><kbd className="font-mono font-semibold">Esc</kbd><span>Close the note box, an edit panel or a menu</span></li>
           </ul>
           <label className="flex items-center gap-2 pt-1">
@@ -311,7 +342,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
         </div>
       )}
 
-      <div ref={listRef} className={`relative lg:max-h-[70vh] lg:overflow-y-auto lg:pr-1 ${f.compact ? 'space-y-1.5' : 'space-y-3'}`}>
+      <div ref={listRef} className={`relative lg:max-h-[70vh] lg:overflow-y-auto lg:pr-1 ${compactOn ? 'space-y-1.5' : 'space-y-3'}`}>
         {filtered.length === 0 ? (
           <p className="text-ink-soft text-sm italic text-center py-8">
             {total === 0 ? 'No notes yet. Press N to add the first one.' : 'No notes match these filters.'}
@@ -326,7 +357,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
               videoId={video.id}
               isCurrent={n.id === currentId}
               showAuthor={!singleAuthor}
-              compact={f.compact}
+              compact={compactOn}
             />
           ))
         )}
@@ -335,7 +366,7 @@ export default function NotesPanel({ video, initialNotes, users, playerRef, time
       {/* Phones: a one-tap way back to the composer once it has scrolled off screen. */}
       {!typing && !composerVisible && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3 bg-paper/95 border-t border-lavender-soft backdrop-blur no-print">
-          <button onClick={openComposer} className="w-full rounded-xl bg-[#6D63B0] text-white font-semibold text-sm py-2.5 tabular">
+          <button onClick={openComposer} className="w-full rounded-xl bg-accent text-white font-semibold text-sm py-2.5 tabular">
             + Add note{time > 0 ? ` at ${formatTimestamp(time)}` : ''}
           </button>
         </div>
