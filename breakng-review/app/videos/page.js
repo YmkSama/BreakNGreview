@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { getVideos } from '@/lib/queries';
+import { getVideos, getVideoNoteStats } from '@/lib/queries';
 import VideoTabs from '@/components/VideoTabs';
 import AddVideoModal from '@/components/AddVideoModal';
 
@@ -8,7 +8,7 @@ export default async function VideosPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-  const videos = await getVideos();
+  const [videos, stats] = await Promise.all([getVideos(), getVideoNoteStats()]);
 
   return (
     <div>
@@ -16,7 +16,7 @@ export default async function VideosPage() {
         <h1 className="font-display text-2xl">Videos</h1>
         <AddVideoModal />
       </div>
-      <VideoTabs videos={videos} />
+      <VideoTabs videos={videos} stats={stats} />
     </div>
   );
 }

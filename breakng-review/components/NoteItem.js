@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toggleReactionAction, updateNoteFieldAction } from '@/app/videos/[id]/actions';
 import { NOTE_TAGS, NOTE_STATUSES, tagInfo, classLabels } from '@/lib/constants';
@@ -30,12 +30,15 @@ function StatusGlyph({ status }) {
 
 const STATUS_LABEL = { OPEN: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved' };
 
-export default function NoteItem({ note, users, playerRef, videoId, depth = 0 }) {
+export default function NoteItem({ note, users, playerRef, videoId, depth = 0, isCurrent = false }) {
   const router = useRouter();
   const [replying, setReplying] = useState(false);
   const [editing, setEditing] = useState(false);
   const [status, setStatus] = useState(note.status);
+  const [undo, setUndo] = useState(false);
+  const undoTimer = useRef(null);
   useEffect(() => setStatus(note.status), [note.status]);
+  useEffect(() => () => clearTimeout(undoTimer.current), []);
 
   const tInfo = tagInfo(note.tag);
   const cls = classLabels(note.classes);
@@ -62,6 +65,13 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0 })
   const toggleResolved = async () => {
     const next = resolved ? 'OPEN' : 'RESOLVED';
     setStatus(next);
+    clearTimeout(undoTimer.current);
+    if (next === 'RESOLVED') {
+      setUndo(true);
+      undoTimer.current = setTimeout(() => setUndo(false), 6000);
+    } else {
+      setUndo(false);
+    }
     const res = await updateNoteFieldAction(note.id, videoId, 'status', next);
     if (res?.error) setStatus(note.status);
     router.refresh();
@@ -87,7 +97,11 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0 })
   }
 
   return (
-    <div className={`bg-white/70 rounded-2xl p-4 border border-lavender-soft ${resolved ? 'opacity-75' : ''}`}>
+    <div
+      data-note-id={note.id}
+      className={`bg-white/70 rounded-2xl p-4 border transition-colors ${isCurrent ? 'border-[#6D63B0] ring-2 ring-lavender' : 'border-lavender-soft'} ${resolved ? 'opacity-75' : ''}`}
+      aria-current={isCurrent ? 'true' : undefined}
+    >
       <div className="flex items-center gap-2 flex-wrap text-xs mb-1.5">
         <button
           onClick={toggleResolved}
@@ -142,7 +156,7 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0 })
         <div className="mb-2 space-y-2 rounded-xl bg-lavender-soft/50 p-3">
           <div className="flex flex-wrap gap-2 text-xs">
             <label className="flex items-center gap-1">
-              Tag
+              Feedback type
               <select value={note.tag} onChange={(e) => changeField('tag', e.target.value)} className="rounded-lg border border-lavender-soft px-2 py-1 bg-white">
                 {NOTE_TAGS.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
@@ -178,11 +192,19 @@ export default function NoteItem({ note, users, playerRef, videoId, depth = 0 })
               </select>
             </label>
           </div>
+          <p className="text-xs">Department</p>
           <ClassPicker value={note.classes || []} onChange={(v) => changeField('classes', v)} />
         </div>
       )}
 
       <NoteBody segments={segments} large />
+
+      {undo && (
+        <p role="status" className="mt-2 flex items-center gap-2 text-xs rounded-lg bg-mint-soft px-2 py-1">
+          Marked resolved.
+          <button onClick={toggleResolved} className="font-semibold underline">Undo</button>
+        </p>
+      )}
 
       <div className="flex items-center gap-3 mt-2 text-xs text-ink-soft">
         <button onClick={react} className={`px-2 py-0.5 rounded-full ${note.reactedByMe ? 'bg-butter text-ink' : 'bg-ink/5'}`}>

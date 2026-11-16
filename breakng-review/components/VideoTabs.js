@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { VIDEO_TYPES } from '@/lib/constants';
 import VideoCard from './VideoCard';
 
-export default function VideoTabs({ videos }) {
+export default function VideoTabs({ videos, stats = {} }) {
   const [active, setActive] = useState(VIDEO_TYPES[0].value);
   const filtered = videos.filter((v) => v.type === active);
 
@@ -33,7 +33,7 @@ export default function VideoTabs({ videos }) {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((v) => (
-            <VideoCard key={v.id} video={v} />
+            <VideoCard key={v.id} video={v} stats={stats[v.id]} />
           ))}
         </div>
       )}

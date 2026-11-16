@@ -63,7 +63,7 @@ export default async function InfoPage() {
             <>Pause the video at the moment you want to comment on, then click into the note box (or press <strong>N</strong>). The time is stamped automatically. Use <strong>⏱ re-mark</strong> to change it.</>,
             <>For a stretch of video, tick <strong>range</strong> and click <strong>→ Mark end</strong> at the end point.</>,
             <>Write your note. Type <strong>@name</strong> to mention a teammate. They&apos;ll get a notification.</>,
-            <>Pick one or more <strong>classes</strong>. Open <strong>Tag &amp; assignee</strong> if you need them. Press <strong>Enter</strong> to post (Shift+Enter adds a new line).</>,
+            <>Pick one or more <strong>departments</strong>. Open <strong>Feedback type &amp; assignee</strong> if you need them. Press <strong>Enter</strong> to post (Shift+Enter adds a new line).</>,
           ]}
         />
         <p>
@@ -72,10 +72,10 @@ export default async function InfoPage() {
         </p>
       </Section>
 
-      <Section title="4. Classes, tags and status">
+      <Section title="4. Departments, feedback types and status">
         <p>
-          <strong>Classes</strong> say which part of production a note is about. You can pick several. Add or change
-          them later with the ✏️ / <em>+ Add class</em> button on a note.
+          <strong>Departments</strong> say which part of production a note is about. You can pick several, and change
+          them later from <strong>Edit</strong> on a note.
         </p>
         <div className="flex flex-wrap gap-1.5">
           {NOTE_CLASSES.map((c) => (
@@ -85,10 +85,10 @@ export default async function InfoPage() {
           ))}
         </div>
         <p>
-          Notes with a class get an emoji marker on the strip under the video. Click a marker to jump there.
+          Notes with a department get an emoji marker on the strip under the video. Click a marker to jump there. Where markers overlap they merge into one with a count. The small buttons under the strip turn each department on or off, and the purple line is where the video is now.
         </p>
         <p>
-          <strong>Tags</strong> say what kind of feedback it is:
+          <strong>Feedback types</strong> say what kind of feedback it is (shown on a note only when it isn&apos;t General):
         </p>
         <div className="flex flex-wrap gap-1.5">
           {NOTE_TAGS.map((t) => (
@@ -100,13 +100,14 @@ export default async function InfoPage() {
         <p>
           <strong>Status</strong> tracks the work ({NOTE_STATUSES.map((s) => s.label).join(' → ')}). Tap the circle at
           the start of a note to mark it resolved, or tap again to reopen it. Use <strong>Edit</strong> on a note to
-          set In progress, or to change its tag, assignee or classes.
+          set In progress, or to change its feedback type, assignee or departments.
         </p>
       </Section>
 
       <Section title="5. Finding things">
         <ul className="list-disc pl-5 space-y-1">
-          <li>Use the filters above the notes to narrow by tag, class, status or person, and to sort by time or newest.</li>
+          <li>Above the notes, switch between All, To do and Done. Open <strong>Filters</strong> to narrow by feedback type, department, author or assignee. Your choices are remembered.</li>
+          <li>Tick <strong>Follow playback</strong> to keep the current note in view as the video plays, or press <strong>J</strong> / <strong>K</strong> to jump to the next or previous note. The note at the current time is outlined.</li>
           <li>The search bar at the top searches note text across all videos. Click a result to jump to that moment.</li>
           <li>
             <strong>Activity</strong> shows the latest notes from everyone, plus your notifications (mentions,
@@ -118,7 +119,7 @@ export default async function InfoPage() {
       <Section title="6. Documents">
         <p>
           The <strong>Documents</strong> tab builds a summary of notes to share or print. Choose which videos,
-          teammates, tags and statuses to include, then copy it as Markdown, download it, or print / save it as a PDF. Class emojis and labels are
+          teammates, departments, feedback types and statuses to include, then copy it as Markdown, download it, or print / save it as a PDF. Department emojis and labels are
           included on each note.
         </p>
       </Section>

@@ -31,6 +31,21 @@ async function getVideos() {
   return db.select().from(videos).orderBy(desc(videos.createdAt));
 }
 
+// { [videoId]: { total, open } } for top-level notes, for progress counts on video cards.
+async function getVideoNoteStats() {
+  const rows = await db
+    .select({ videoId: notes.videoId, status: notes.status })
+    .from(notes)
+    .where(isNull(notes.parentId));
+  const stats = {};
+  for (const r of rows) {
+    const s = (stats[r.videoId] ||= { total: 0, open: 0 });
+    s.total += 1;
+    if (r.status !== 'RESOLVED') s.open += 1;
+  }
+  return stats;
+}
+
 async function getVideoById(id) {
   const rows = await db.select().from(videos).where(eq(videos.id, id)).limit(1);
   return rows[0] || null;
@@ -301,6 +316,7 @@ module.exports = {
   createUser,
   getVideos,
   getVideoById,
+  getVideoNoteStats,
   createVideo,
   updateVideo,
   deleteVideo,

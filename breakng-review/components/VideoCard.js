@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export default function VideoCard({ video }) {
+export default function VideoCard({ video, stats }) {
   return (
     <Link
       href={`/videos/${video.id}`}
@@ -18,6 +18,13 @@ export default function VideoCard({ video }) {
         <p className="font-medium text-sm line-clamp-2">
           {video.episodeNumber ? `#${video.episodeNumber} — ` : ''}
           {video.title}
+        </p>
+        <p className="mt-1 text-xs text-ink-soft tabular">
+          {!stats || stats.total === 0
+            ? 'No notes yet'
+            : stats.open === 0
+              ? `All ${stats.total} notes resolved ✓`
+              : `${stats.open} to do · ${stats.total - stats.open} resolved`}
         </p>
       </div>
     </Link>

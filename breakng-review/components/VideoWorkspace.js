@@ -7,10 +7,12 @@ import NotesPanel from './NotesPanel';
 import EditVideoControls from './EditVideoControls';
 import TimelineMarkers from './TimelineMarkers';
 import ImportMarkers from './ImportMarkers';
+import usePlayhead from './usePlayhead';
 import { videoTypeLabel } from '@/lib/constants';
 
 export default function VideoWorkspace({ video, initialNotes, users, initialSeek }) {
   const playerRef = useRef(null);
+  const time = usePlayhead(playerRef);
 
   return (
     <div>
@@ -32,9 +34,9 @@ export default function VideoWorkspace({ video, initialNotes, users, initialSeek
         {/* Pinned on phones so the video stays in view while you write a note */}
         <div className="sticky top-0 z-30 -mx-4 px-4 pb-2 bg-[#F8F5FB] shadow-[0_6px_10px_-8px_rgba(74,69,96,0.35)] lg:static lg:mx-0 lg:p-0 lg:bg-transparent lg:shadow-none">
           <YouTubeEmbed youtubeId={video.youtubeId} playerRef={playerRef} initialSeek={initialSeek} />
-          <TimelineMarkers notes={initialNotes} playerRef={playerRef} />
+          <TimelineMarkers notes={initialNotes} playerRef={playerRef} time={time} />
         </div>
-        <NotesPanel video={video} initialNotes={initialNotes} users={users} playerRef={playerRef} />
+        <NotesPanel video={video} initialNotes={initialNotes} users={users} playerRef={playerRef} time={time} />
       </div>
     </div>
   );

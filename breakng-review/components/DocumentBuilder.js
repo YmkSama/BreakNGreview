@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { NOTE_TAGS, NOTE_STATUSES, tagInfo, statusInfo, classLabels, videoTypeLabel } from '@/lib/constants';
+import { NOTE_TAGS, NOTE_STATUSES, NOTE_CLASSES, tagInfo, statusInfo, classLabels, videoTypeLabel } from '@/lib/constants';
 import { formatRange } from '@/lib/time';
 
 function buildMarkdown(groups) {
@@ -15,7 +15,14 @@ function buildMarkdown(groups) {
     for (const n of group.notes) {
       const time = n.timestampSeconds != null ? `[${formatRange(n.timestampSeconds, n.endTimestampSeconds)}] ` : '';
       const classText = classLabels(n.classes).map((c) => `${c.emoji} ${c.label}`).join(', ');
-      const meta = `${tagInfo(n.tag).label}${classText ? ` · ${classText}` : ''} · ${statusInfo(n.status).label}${n.assignee ? ` · assigned: ${n.assignee.name}` : ''}`;
+      const meta = [
+        n.tag !== 'GENERAL' ? tagInfo(n.tag).label : null,
+        classText || null,
+        statusInfo(n.status).label,
+        n.assignee ? `assigned: ${n.assignee.name}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ');
       lines.push(`- **${time}${n.author?.name || 'Unknown'}** _(${meta})_ — ${n.text}`);
       for (const r of n.replies) {
         lines.push(`  - ↳ **${r.author?.name || 'Unknown'}**: ${r.text}`);
@@ -24,6 +31,13 @@ function buildMarkdown(groups) {
     lines.push('');
   }
   return lines.join('\n');
+}
+
+// A note passes if it has no department (and "No department" is on) or any of its departments is on.
+function matchesDepartment(n, classSet) {
+  const cls = n.classes || [];
+  if (cls.length === 0) return classSet.has('NONE');
+  return cls.some((c) => classSet.has(c));
 }
 
 function FilterGroup({ title, items, selected, onToggle }) {
@@ -54,6 +68,7 @@ export default function DocumentBuilder({ videos, users, notes }) {
   const [videoIds, setVideoIds] = useState(() => new Set(videos.map((v) => v.id)));
   const [userIds, setUserIds] = useState(() => new Set(users.map((u) => u.id)));
   const [tags, setTags] = useState(() => new Set(NOTE_TAGS.map((t) => t.value)));
+  const [classSet, setClassSet] = useState(() => new Set([...NOTE_CLASSES.map((c) => c.value), 'NONE']));
   const [statuses, setStatuses] = useState(() => new Set(NOTE_STATUSES.map((s) => s.value)));
 
   const toggle = (set, setter, value) => {
@@ -69,11 +84,11 @@ export default function DocumentBuilder({ videos, users, notes }) {
       .map((video) => {
         const videoNotes = notes
           .filter((n) => n.videoId === video.id)
-          .filter((n) => userIds.has(n.authorId) && tags.has(n.tag) && statuses.has(n.status))
+          .filter((n) => userIds.has(n.authorId) && tags.has(n.tag) && statuses.has(n.status) && matchesDepartment(n, classSet))
           .map((n) => ({ ...n, replies: n.replies.filter((r) => userIds.has(r.authorId)) }));
         return { video, notes: videoNotes };
       });
-  }, [videos, notes, videoIds, userIds, tags, statuses]);
+  }, [videos, notes, videoIds, userIds, tags, statuses, classSet]);
 
   const markdown = useMemo(() => buildMarkdown(groups), [groups]);
 
@@ -104,9 +119,10 @@ export default function DocumentBuilder({ videos, users, notes }) {
         <div className="space-y-5 no-print">
           <FilterGroup title="Videos" items={videos.map((v) => ({ value: v.id, label: v.title }))} selected={videoIds} onToggle={(v) => toggle(videoIds, setVideoIds, v)} />
           <FilterGroup title="Team members" items={users.map((u) => ({ value: u.id, label: u.name }))} selected={userIds} onToggle={(v) => toggle(userIds, setUserIds, v)} />
-          <FilterGroup title="Tags" items={NOTE_TAGS.map((t) => ({ value: t.value, label: t.label }))} selected={tags} onToggle={(v) => toggle(tags, setTags, v)} />
+          <FilterGroup title="Departments" items={[...NOTE_CLASSES.map((c) => ({ value: c.value, label: `${c.emoji} ${c.label}` })), { value: 'NONE', label: 'No department' }]} selected={classSet} onToggle={(v) => toggle(classSet, setClassSet, v)} />
+          <FilterGroup title="Feedback types" items={NOTE_TAGS.map((t) => ({ value: t.value, label: t.label }))} selected={tags} onToggle={(v) => toggle(tags, setTags, v)} />
           <FilterGroup title="Status" items={NOTE_STATUSES.map((s) => ({ value: s.value, label: s.label }))} selected={statuses} onToggle={(v) => toggle(statuses, setStatuses, v)} />
-          <p className="text-xs text-ink-soft">Untoggle a video, teammate, tag, or status to leave their notes out of the document.</p>
+          <p className="text-xs text-ink-soft">Untoggle a video, teammate, department, feedback type, or status to leave their notes out of the document.</p>
         </div>
 
         <div>

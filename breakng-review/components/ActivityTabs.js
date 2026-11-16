@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { formatRange } from '@/lib/time';
+import { formatRange, formatRelative } from '@/lib/time';
 import { tagInfo, classLabels } from '@/lib/constants';
 import { markAllReadAction } from '@/app/activity/actions';
 
@@ -70,6 +70,7 @@ export default function ActivityTabs({ activity, notifications }) {
                 <div className="flex items-center gap-2 text-xs mb-1 flex-wrap">
                   <span className="font-medium">{n.author?.name}</span>
                   <span className="text-ink-soft">on {n.video?.title}</span>
+                  <span className="text-ink-soft tabular">{formatRelative(n.createdAt)}</span>
                   {n.timestampSeconds != null && (
                     <span className="font-mono bg-sky-soft rounded-full px-2 py-0.5">
                       {formatRange(n.timestampSeconds, n.endTimestampSeconds)}
