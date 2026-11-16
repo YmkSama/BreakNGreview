@@ -1,4 +1,4 @@
-const { eq, and, desc, asc, inArray } = require('drizzle-orm');
+const { eq, and, desc, asc, inArray, isNull } = require('drizzle-orm');
 const { db, users, videos, notes, reactions, notifications } = require('@/db');
 const { findMentions } = require('./mentions');
 const { USER_COLORS } = require('./constants');
@@ -177,6 +177,32 @@ async function createNote({ videoId, authorId, parentId, timestampSeconds, endTi
   return note;
 }
 
+// Bulk-insert imported marker notes, skipping ones already on the video (same time + text).
+async function createNotesBulk({ videoId, authorId, items }) {
+  const existing = await db
+    .select({ t: notes.timestampSeconds, text: notes.text })
+    .from(notes)
+    .where(and(eq(notes.videoId, videoId), isNull(notes.parentId)));
+  const seen = new Set(existing.map((n) => `${n.t}|${n.text}`));
+
+  const fresh = items.filter((i) => !seen.has(`${i.timestampSeconds}|${i.text}`));
+  if (fresh.length) {
+    await db.insert(notes).values(
+      fresh.map((i) => ({
+        videoId,
+        authorId,
+        timestampSeconds: i.timestampSeconds,
+        endTimestampSeconds: i.endTimestampSeconds,
+        text: i.text,
+        tag: 'GENERAL',
+        classes: i.classes,
+        status: 'OPEN',
+      }))
+    );
+  }
+  return { created: fresh.length, skipped: items.length - fresh.length };
+}
+
 async function updateNote(noteId, fields) {
   const rows = await db
     .update(notes)
@@ -283,6 +309,7 @@ module.exports = {
   markAllNotificationsRead,
   getNotesForVideo,
   createNote,
+  createNotesBulk,
   updateNote,
   toggleReaction,
   searchNotes,

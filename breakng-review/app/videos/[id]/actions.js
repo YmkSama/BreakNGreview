@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createNote, updateNote, toggleReaction } from '@/lib/queries';
+import { createNote, createNotesBulk, updateNote, toggleReaction } from '@/lib/queries';
 import { getCurrentUser } from '@/lib/auth';
 import { NOTE_CLASSES } from '@/lib/constants';
 
@@ -57,4 +57,32 @@ export async function toggleReactionAction(noteId, videoId) {
   await toggleReaction(noteId, user.id);
   revalidatePath(`/videos/${videoId}`);
   return { ok: true };
+}
+
+export async function importMarkersAction(videoId, items) {
+  const user = await getCurrentUser();
+  if (!user) return { error: 'Not logged in' };
+  if (!Array.isArray(items) || items.length === 0) return { error: 'Nothing to import.' };
+  if (items.length > 500) return { error: 'Import at most 500 markers at a time.' };
+
+  const clean = [];
+  for (const i of items) {
+    const text = (i?.text || '').toString().trim().slice(0, 5000);
+    const t = Number(i?.timestampSeconds);
+    if (!text || !Number.isFinite(t) || t < 0) continue;
+    const end = Number(i?.endTimestampSeconds);
+    clean.push({
+      text,
+      timestampSeconds: t,
+      endTimestampSeconds: Number.isFinite(end) && end > t ? end : null,
+      classes: cleanClasses(i?.classes),
+    });
+  }
+  if (clean.length === 0) return { error: 'No valid markers to import.' };
+
+  const result = await createNotesBulk({ videoId, authorId: user.id, items: clean });
+  revalidatePath(`/videos/${videoId}`);
+  revalidatePath('/activity');
+  revalidatePath('/documents');
+  return { ok: true, ...result };
 }

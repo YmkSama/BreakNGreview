@@ -6,6 +6,7 @@ import YouTubeEmbed from './YouTubeEmbed';
 import NotesPanel from './NotesPanel';
 import EditVideoControls from './EditVideoControls';
 import TimelineMarkers from './TimelineMarkers';
+import ImportMarkers from './ImportMarkers';
 import { videoTypeLabel } from '@/lib/constants';
 
 export default function VideoWorkspace({ video, initialNotes, users, initialSeek }) {
@@ -22,7 +23,10 @@ export default function VideoWorkspace({ video, initialNotes, users, initialSeek
             {videoTypeLabel(video.type)}
           </span>
         </h1>
-        <EditVideoControls video={video} />
+        <div className="flex items-center gap-2 shrink-0">
+          <ImportMarkers videoId={video.id} />
+          <EditVideoControls video={video} />
+        </div>
       </div>
       <div className="grid lg:grid-cols-[1fr_420px] gap-6 items-start">
         <div>
